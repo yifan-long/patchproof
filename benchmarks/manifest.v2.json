@@ -1,0 +1,126 @@
+{
+  "schema_version": "patchproof.corpus.v2",
+  "corpus_id": "patchproof-mini-and-public-v0.3.1",
+  "provenance": {
+    "owner": "PatchProof",
+    "third_party_policy": "public source is resolved into ignored data/eval-cache only after explicit confirmation",
+    "public_resolution": "unresolved descriptors contain official dataset identifiers and resolver requirements"
+  },
+  "cases": [
+    {
+      "schema_version": "patchproof.case.v2",
+      "id": "mini-validation",
+      "suite": "mini-repos",
+      "source_kind": "local",
+      "local_path": "benchmarks/fixtures/validation",
+      "issue": "Reject blank names and malformed email addresses while normalizing valid registrations.",
+      "goal": "Repair registration validation without changing the public function contract.",
+      "setup_argv": [],
+      "required_check_argv": ["python", "-m", "pytest", "-q"],
+      "image": "local://patchproof-python312",
+      "allowed_edit_paths": ["validation.py"],
+      "expected_changed_files": ["validation.py"],
+      "expected_contents": {
+        "validation.py": "\"\"\"Small validation domain used for offline harness smoke tests.\"\"\"\n\nimport re\nfrom dataclasses import dataclass\n\nEMAIL = re.compile(r\"^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$\")\n\n\n@dataclass(frozen=True)\nclass Registration:\n    name: str\n    email: str\n\n\ndef validate_registration(name: str, email: str) -> Registration:\n    if not name.strip():\n        raise ValueError(\"name is required\")\n    if not EMAIL.fullmatch(email.strip()):\n        raise ValueError(\"email is invalid\")\n    return Registration(name=name.strip(), email=email.strip().lower())\n"
+      },
+      "timeout": 60,
+      "resources": {"cpu": 1.0, "memory_mb": 512, "pids": 64, "output_bytes": 200000},
+      "repeats": 2,
+      "privacy_public_code": false,
+      "provenance_state": "resolved",
+      "tags": ["validation", "semantic-tests"]
+    },
+    {
+      "schema_version": "patchproof.case.v2",
+      "id": "mini-config-precedence",
+      "suite": "mini-repos",
+      "source_kind": "local",
+      "local_path": "benchmarks/fixtures/config-precedence",
+      "issue": "Explicit environment values must win over file values, which win over defaults.",
+      "goal": "Preserve deterministic configuration precedence across sources.",
+      "setup_argv": [],
+      "required_check_argv": ["python", "-m", "pytest", "-q"],
+      "image": "local://patchproof-python312",
+      "allowed_edit_paths": ["config_loader.py"],
+      "expected_changed_files": ["config_loader.py"],
+      "expected_contents": {
+        "config_loader.py": "from dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass Config:\n    endpoint: str\n    timeout: int\n\n\ndef load_config(values: dict[str, str], env: dict[str, str]) -> Config:\n    endpoint = env.get(\"APP_ENDPOINT\", values.get(\"endpoint\", \"http://localhost\"))\n    timeout = int(env.get(\"APP_TIMEOUT\", values.get(\"timeout\", \"10\")))\n    return Config(endpoint=endpoint, timeout=timeout)\n"
+      },
+      "timeout": 60,
+      "resources": {"cpu": 1.0, "memory_mb": 512, "pids": 64, "output_bytes": 200000},
+      "repeats": 2,
+      "privacy_public_code": false,
+      "provenance_state": "resolved",
+      "tags": ["configuration", "precedence"]
+    },
+    {
+      "schema_version": "patchproof.case.v2",
+      "id": "mini-pagination",
+      "suite": "mini-repos",
+      "source_kind": "local",
+      "local_path": "benchmarks/fixtures/pagination",
+      "issue": "A page ending exactly at the collection boundary must not report another page.",
+      "goal": "Correct pagination boundary behavior and retain invalid-bound checks.",
+      "setup_argv": [],
+      "required_check_argv": ["python", "-m", "pytest", "-q"],
+      "image": "local://patchproof-python312",
+      "allowed_edit_paths": ["pagination.py"],
+      "expected_changed_files": ["pagination.py"],
+      "expected_contents": {
+        "pagination.py": "from collections.abc import Sequence\n\n\ndef page[T](items: Sequence[T], *, offset: int, limit: int) -> list[T]:\n    if offset < 0 or limit < 1:\n        raise ValueError(\"offset must be non-negative and limit must be positive\")\n    return list(items[offset : offset + limit])\n\n\ndef has_next[T](items: Sequence[T], *, offset: int, limit: int) -> bool:\n    return offset + limit < len(items)\n"
+      },
+      "timeout": 60,
+      "resources": {"cpu": 1.0, "memory_mb": 512, "pids": 64, "output_bytes": 200000},
+      "repeats": 2,
+      "privacy_public_code": false,
+      "provenance_state": "resolved",
+      "tags": ["pagination", "boundary"]
+    },
+    {
+      "schema_version": "patchproof.case.v2",
+      "id": "mini-idempotency",
+      "suite": "mini-repos",
+      "source_kind": "local",
+      "local_path": "benchmarks/fixtures/idempotency",
+      "issue": "Repeated state-transition request keys must not apply a transition twice.",
+      "goal": "Keep state transitions valid and request-key idempotency observable.",
+      "setup_argv": [],
+      "required_check_argv": ["python", "-m", "pytest", "-q"],
+      "image": "local://patchproof-python312",
+      "allowed_edit_paths": ["state.py"],
+      "expected_changed_files": ["state.py"],
+      "expected_contents": {
+        "state.py": "from dataclasses import dataclass\n\n\n@dataclass\nclass Job:\n    state: str = \"pending\"\n    applied_keys: set[str] | None = None\n\n    def __post_init__(self) -> None:\n        self.applied_keys = self.applied_keys or set()\n\n    def transition(self, next_state: str, request_key: str) -> bool:\n        if request_key in self.applied_keys:\n            return False\n        if (self.state, next_state) not in {(\"pending\", \"running\"), (\"running\", \"done\")}:\n            raise ValueError(f\"invalid transition: {self.state}->{next_state}\")\n        self.state = next_state\n        self.applied_keys.add(request_key)\n        return True\n"
+      },
+      "timeout": 60,
+      "resources": {"cpu": 1.0, "memory_mb": 512, "pids": 64, "output_bytes": 200000},
+      "repeats": 2,
+      "privacy_public_code": false,
+      "provenance_state": "resolved",
+      "tags": ["state", "idempotency"]
+    },
+    {
+      "schema_version": "patchproof.case.v2",
+      "id": "mini-serialization",
+      "suite": "mini-repos",
+      "source_kind": "local",
+      "local_path": "benchmarks/fixtures/serialization",
+      "issue": "Version-one payloads omit the active field and must remain readable after the v2 change.",
+      "goal": "Preserve backward-compatible decoding and deterministic serialization.",
+      "setup_argv": [],
+      "required_check_argv": ["python", "-m", "pytest", "-q"],
+      "image": "local://patchproof-python312",
+      "allowed_edit_paths": ["codec.py"],
+      "expected_changed_files": ["codec.py"],
+      "expected_contents": {
+        "codec.py": "import json\nfrom dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass User:\n    name: str\n    active: bool = True\n\n\ndef decode_user(payload: str) -> User:\n    raw = json.loads(payload)\n    # v1 omitted active; v2 makes it explicit while preserving old payloads.\n    return User(name=str(raw[\"name\"]), active=bool(raw.get(\"active\", True)))\n\n\ndef encode_user(user: User) -> str:\n    return json.dumps({\"name\": user.name, \"active\": user.active}, sort_keys=True)\n"
+      },
+      "timeout": 60,
+      "resources": {"cpu": 1.0, "memory_mb": 512, "pids": 64, "output_bytes": 200000},
+      "repeats": 2,
+      "privacy_public_code": false,
+      "provenance_state": "resolved",
+      "tags": ["serialization", "backward-compatibility"]
+    }
+  ]
+}

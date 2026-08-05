@@ -1,0 +1,15 @@
+{
+  "cases": [
+    {
+      "id": "add-validation",
+      "fixture": "benchmarks/fixtures/add-validation",
+      "goal": "修复 add 函数对负数输入的验证，并保留现有测试契约",
+      "check_command": "python -m pytest -q",
+      "expected_files": ["app.py"],
+      "assertions": ["pytest passes", "only app.py changes"],
+      "expected_contents": {
+        "app.py": "def add(a: int, b: int) -> int:\n    if a < 0 or b < 0:\n        raise ValueError(\"negative input\")\n    return a + b\n"
+      }
+    }
+  ]
+}
