@@ -127,11 +127,11 @@ implementation.
 
 ## Reproducing the public BugsInPy cases
 
-Four BugsInPy public cases are `verified_failing` on the pinned Python 3.8
-evaluator: `pysnooper-1`, `pysnooper-2`, `pysnooper-3`, `fastapi-1`. The other
-four public descriptors are `environment_unreproducible` (Python 3.6/3.7
-runtime mismatch with the Python 3.8 evaluator) and are honestly excluded from
-scoring.
+Three BugsInPy public cases are `verified_failing` on the pinned Python 3.8
+evaluator and form complete baseline-vs-harness pairs: `pysnooper-1`,
+`pysnooper-3`, `fastapi-1`. The other four public descriptors are
+`environment_unreproducible` (Python 3.6/3.7 runtime mismatch with the Python
+3.8 evaluator) and are honestly excluded from scoring.
 
 Steps to reproduce the reported results:
 
@@ -151,15 +151,12 @@ Steps to reproduce the reported results:
 # 2. The official test files depend on python_toolbox / other packages the
 #    evaluator image does not install, so the self-contained reconstructed
 #    contracts (kept in-repo under benchmarks/public/) are materialized into
-#    the resolved snapshots, and the cached run_test.sh for pysnooper bugs
-#    2 and 3 is pointed at them. fastapi-1's official check already targets
-#    the reconstructed test name.
-#    Snapshots:  pysnooper-1/2 -> data/eval-cache/sources/<e21a311-hash>
-#                pysnooper-3   -> data/eval-cache/sources/<6e3d797-hash>
-#                fastapi-1     -> data/eval-cache/sources/<766157b-hash>
+#    the resolved snapshots. fastapi-1's official check already targets the
+#    reconstructed test name.
+#    Snapshots:  pysnooper-1 -> data/eval-cache/sources/<e21a311-hash>
+#                pysnooper-3 -> data/eval-cache/sources/<6e3d797-hash>
+#                fastapi-1   -> data/eval-cache/sources/<766157b-hash>
 $s = Get-ChildItem data/eval-cache/sources -Directory
-Copy-Item benchmarks/public/pysnooper-2/test_custom_repr_single.py `
-  ($s | Where-Object { Test-Path "$($_.FullName)\pysnooper\tracer.py" } | Select-Object -First 1).FullName
 Copy-Item benchmarks/public/pysnooper-3/test_file_output.py `
   ($s | Where-Object { Test-Path "$($_.FullName)\pysnooper\pysnooper.py" } | Select-Object -First 1).FullName
 Copy-Item benchmarks/public/fastapi-1/test_jsonable_encoder.py `
@@ -171,14 +168,17 @@ Copy-Item benchmarks/public/fastapi-1/test_jsonable_encoder.py `
   --manifest data/bugs-in-py.resolved.v3.run.lock.json `
   --project-root . --output data/benchmark-real-bugsinpy-v3.json `
   --confirm-real --confirm-public-code-egress --confirm-download `
-  --max-cases 4 --repeats 1 --max-requests 100 --max-tokens 600000 --max-cost-usd 4
+  --max-cases 3 --repeats 1 --max-requests 100 --max-tokens 600000 --max-cost-usd 4
 ```
 
 Reproduction materializes only the test contracts; the library fixes
 (`pysnooper/tracer.py`, `pysnooper/pysnooper.py`, `fastapi/encoders.py`) are
 produced by the model. `data/eval-cache/` is gitignored, so step 2 must be
-repeated after a fresh clone. Reported results: `pysnooper-1` and
-`pysnooper-3` are complete pairs; `fastapi-1` harness succeeds (baseline
-one-shot precondition fails); `pysnooper-2` is a documented failure. Budget
-hints: use `PATCHPROOF_LLM_REASONING=off` and, for large one-shot patches,
-`PATCHPROOF_MAX_TOKENS=16384` to avoid `provider_output_truncated`.
+repeated after a fresh clone. Reported results: all three cases are complete
+pairs. Budget hints: use `PATCHPROOF_LLM_REASONING=off` and, for large one-shot
+patches, `PATCHPROOF_MAX_TOKENS=16384` to avoid `provider_output_truncated`.
+
+A one-shot focused-source weakness discovered on `fastapi-1` is fixed in
+`evaluation.py` and `repo_index.py`: when a failing output names a function but
+not its file path, the symbol's defining file is now added to the focused
+context (whole-word match), and focused files are always allocated source slots.

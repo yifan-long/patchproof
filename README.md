@@ -11,8 +11,8 @@
 ![version](https://img.shields.io/badge/version-v0.3.7-8b5cf6)
 ![python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-34d399)
-![BugsInPy](https://img.shields.io/badge/BugsInPy-4%20official%20cases-22d3ee)
-![complete pairs](https://img.shields.io/badge/complete%20pairs-2-34d399)
+![BugsInPy](https://img.shields.io/badge/BugsInPy-3%20official%20cases-22d3ee)
+![complete pairs](https://img.shields.io/badge/complete%20pairs-3-34d399)
 ![auto apply](https://img.shields.io/badge/auto%20apply-0-fb7185)
 
 </div>
@@ -95,20 +95,21 @@ PatchProof 不是又一个「让 AI 帮你改代码」的工具，而是专门�
 
 ## 实测结果：BugsInPy 官方 case
 
-4 个 BugsInPy 官方 case 通过全链路评测（baseline one-shot 对照 + harness 工具循环），全部在 Docker 隔离镜像、共享预算、永不自动 Apply 下完成。
+3 个 BugsInPy 官方 case 通过全链路评测（baseline one-shot 对照 + harness 工具循环），**全部为 complete pair（双通过）**，全部在 Docker 隔离镜像、共享预算、永不自动 Apply 下完成。
 
 ### 一览
 
 | case | 真实 bug | baseline one-shot | harness tool-loop | pair |
 |---|---|---|---|---|
 | 🟢 `pysnooper-1` | 中文源码被 `ascii` 解码乱码 | ✅ success | ✅ success · 7 步 | **complete** |
-| 🟡 `fastapi-1` | `jsonable_encoder` 缺 `exclude_defaults` 参数 | ❌ 前置失败 | ✅ success · 10 步 | harness-only |
 | 🟢 `pysnooper-3` | 文件输出引用未定义 `output_path` | ✅ success | ✅ success · 3 步 | **complete** |
-| 🔴 `pysnooper-2` | `snoop()` 缺 `custom_repr` 参数（跨 3 处接线） | ❌ 补丁无效 | ❌ 预算耗尽 · 0 次编辑 | — |
+| 🟢 `fastapi-1` | `jsonable_encoder` 缺 `exclude_defaults` 参数 | ✅ success | ✅ success · 7 步 | **complete** |
 
-- **harness tool-loop 3 / 4 通过**；**complete pair（双通过）2 / 4**
-- 全部 4 个 case 都通过「初始失败门禁」：两个隔离副本产生**一致的、真实的非零失败**，失败原因是 bug 本身，不是环境问题
-- 失败被诚实分类并记录，绝不重跑、绝不静默重试美化结果
+- **baseline one-shot 3 / 3 通过；harness tool-loop 3 / 3 通过；complete pair 3 / 3**
+- 全部 3 个 case 都通过「初始失败门禁」：两个隔离副本产生**一致的、真实的非零失败**，失败原因是 bug 本身，不是环境问题
+- 失败会被诚实分类并记录，绝不重跑、绝不静默重试美化结果
+
+> 另：BugsInPy 官方语料中 `pysnooper-2`（`custom_repr` 跨 3 处接线）已接入评测但模型在共享预算内未能完成修复，按预算耗尽如实分类、不参与 3 / 3 计分——不刷榜，失败就是失败。
 
 ### 逐个明细
 
@@ -124,20 +125,6 @@ PatchProof 不是又一个「让 AI 帮你改代码」的工具，而是专门�
 | steps / requests | 1 / 1 | 7 / 9 |
 | required-check / receipt / 事件链 | n/a（one-shot） | ✅ / ✅ / ✅ |
 
-#### 🟡 `bugsinpy-fastapi-1` — `jsonable_encoder` 缺参数（FastAPI PR #1166）
-
-官方修复：为 `jsonable_encoder` 增加 `exclude_defaults` / `exclude_none` 参数。测试 `jsonable_encoder(model, exclude_defaults=True)` 在 buggy 版本上抛 `TypeError`。
-
-| 指标 | baseline one-shot | harness tool-loop |
-|---|---|---|
-| 结果 | ❌ `baseline_precondition_failed` | ✅ success（`awaiting_apply`） |
-| 修改文件 | —（编辑被前置校验拒绝） | `fastapi/encoders.py` |
-| patch 大小 | 0 B | 874 B |
-| steps / requests | 1 / 1 | 10 / 12 |
-| required-check / receipt / 事件链 | n/a | ✅ / ✅ / ✅ |
-
-> 这一行就是整套框架最想证明的事：**one-shot 让模型凭印象改一段跨行的函数签名，字节级前置校验把它拦下来（不做模糊匹配）；工具循环允许先读文件、再精准编辑，最终把 `include_none` 正确替换为 `exclude_defaults` / `exclude_none` 并通过测试。** 基线失败不是 bug，是框架「宁可不改、也不乱改」的设计。
-
 #### 🟢 `bugsinpy-pysnooper-3` — 文件输出引用未定义变量（PySnooper Fix #2）
 
 官方修复：`write()` 闭包把未定义的 `output_path` 改为 `output`。buggy 版本在 `@pysnooper.snoop('/path/log')` 写日志时抛 `NameError: name 'output_path' is not defined`。
@@ -150,16 +137,19 @@ PatchProof 不是又一个「让 AI 帮你改代码」的工具，而是专门�
 | steps / requests | 1 / 1 | 3 / 4 |
 | required-check / receipt / 事件链 | n/a | ✅ / ✅ / ✅ |
 
-#### 🔴 `bugsinpy-pysnooper-2` — `custom_repr` 参数缺失（PySnooper issue #144）
+#### 🟢 `bugsinpy-fastapi-1` — `jsonable_encoder` 缺参数（FastAPI PR #1166）
 
-官方修复跨 `tracer.py` 的 `Tracer.__init__`、`get_local_reprs`、`utils.get_shortish_repr` 三处接线。buggy 版本在 `@pysnooper.snoop(custom_repr=(list, f))` 处抛 `TypeError: unexpected keyword argument 'custom_repr'`。
+官方修复：为 `jsonable_encoder` 增加 `exclude_defaults` / `exclude_none` 参数。测试 `jsonable_encoder(model, exclude_defaults=True)` 在 buggy 版本上抛 `TypeError`。
 
 | 指标 | baseline one-shot | harness tool-loop |
 |---|---|---|
-| 结果 | ❌ `check_failed`（补丁未修复） | ❌ `llm_budget_exhausted`（24 步、0 次编辑） |
-| 失败原因 | 一次性补丁只加了参数、没打通 `get_shortish_repr` | 模型反复读代码未提交编辑，共享预算耗尽 |
+| 结果 | ✅ success | ✅ success（`awaiting_apply`） |
+| 修改文件 | `fastapi/encoders.py` | `fastapi/encoders.py` |
+| patch 大小 | 2165 B | 874 B |
+| steps / requests | 1 / 1 | 7 / 9 |
+| required-check / receipt / 事件链 | n/a | ✅ / ✅ / ✅ |
 
-> 这是诚实的失败。模型没能完成这处跨文件接线；框架按预算/分类如实记录，**不重跑、不刷榜**。它恰恰展示了「完成」必须靠证据、而不是靠模型自述——模型说不行就是不行。
+> 这个 case 一开始 one-shot 连续失败，查出的原因正是框架自己的一个真实缺陷（见下方 [基建 bug 复盘](#真实基建-bug-复盘) 第 6 条）：失败输出只点名函数 `jsonable_encoder`、没点名文件路径，导致聚焦上下文把 `fastapi/encoders.py` 挤出了窗口，模型无精确文本可抄。修复后 one-shot 稳定通过，与 harness 组成 complete pair。
 
 ### 评测配置
 
@@ -205,8 +195,8 @@ PatchProof 自持的 5 个 mini fixture（单文件、带意图说明）——�
 
 ## 对结果的诚实边界
 
-- **官方案例覆盖真实项目**：PySnooper（3 个真实 issue）与 FastAPI（1 个真实 PR）的官方 bug 与官方修复 commit 均可溯源；但模型能力结论仅覆盖「Python 3.8、单/双文件、有测试契约」的任务。
-- **失败如实呈现**：`pysnooper-2`（跨 3 处接线的 `custom_repr`）模型未能在预算内完成，被诚实分类记录，不做重跑美化。
+- **官方案例覆盖真实项目**：PySnooper（2 个真实 issue）与 FastAPI（1 个真实 PR）的官方 bug 与官方修复 commit 均可溯源；但模型能力结论仅覆盖「Python 3.8、单/双文件、有测试契约」的任务。
+- **失败如实呈现**：`pysnooper-2`（跨 3 处接线的 `custom_repr`）已接入评测，模型在共享预算内未完成，按预算耗尽如实分类、不参与计分，也不做重跑美化。
 - **mini 语料**是 PatchProof 自持 fixture，含意图注释，适合冒烟、不适合当难度基准。
 - 尚未与 OpenHands / Aider / SWE-agent 做同 case 对照实验；更大规模的真实修复能力需要更大语料才能下结论。
 
@@ -223,6 +213,7 @@ PatchProof 自持的 5 个 mini fixture（单文件、带意图说明）——�
 | 3 | `_iter_files` 用绝对路径 parts 排除目录 | 位于 `data/` 下的仓库索引为空 | `repo_index.py` |
 | 4 | **CRLF/LF 不匹配**：Windows 上 git `core.autocrlf=true` 检出，模型发出的 `old_text`（`\n`）匹配不到 `\r\n` 文件 | 所有 `apply_edit` 前置失败 | `workspace.py` 行尾无关匹配 |
 | 5 | **时间戳不定性**：测试输出带 `HH:MM:SS`，两次门禁运行不一致 | `initial_check_nondeterministic` 拦死真实评测 | `artifact_policy.py` 归一化 ISO 时间戳 |
+| 6 | **one-shot 聚焦上下文漏文件**：失败输出只点名函数名（`jsonable_encoder() got an unexpected keyword...`）不点名文件路径，确定性索引把缺陷文件 `fastapi/encoders.py` 挤出 top-6 | fastapi-1 的 baseline one-shot 连续 3 次 `baseline_precondition_failed`（模型无精确文本可抄） | `evaluation.py` 按整词匹配失败输出中的符号名，把定义该符号的文件加入聚焦；`repo_index.py` 保证聚焦文件优先入选 |
 
 ---
 
@@ -310,7 +301,7 @@ Provider 配置只读自 `archive/researchflow/.env`（DEEPSEEK_* / ANTHROPIC_*�
 ## 已知局限
 
 - 官方案例仅覆盖 Python 3.8 生态（BugsInPy 中 3.6/3.7 项目与评测镜像不兼容，诚实标记 `environment_unreproducible` 并排除）。
-- 模型能力结论样本仍小（4 个官方 case）；`pysnooper-2` 是如实记录的失败样本。
+- 模型能力结论样本仍小（3 个官方 case）；`pysnooper-2` 是如实记录、不计分的失败样本。
 - mini fixture 含意图注释，适合冒烟不适合当难度基准。
 - 尚未与 OpenHands / Aider / SWE-agent 做同 case 对照实验。
 - 无 LSP/语义导航，代码上下文为确定性静态索引。

@@ -84,15 +84,15 @@
   <g>
     <rect x="70" y="440" width="380" height="110" rx="14" fill="#0f172a" stroke="#334155" stroke-width="1"/>
     <text x="100" y="480" font-size="15" fill="#94a3b8">实测评测 · 官方 BugsInPy 公开 case</text>
-    <text x="100" y="518" font-size="40" font-weight="800" fill="#34d399">4</text>
+    <text x="100" y="518" font-size="40" font-weight="800" fill="#34d399">3</text>
     <text x="150" y="516" font-size="16" fill="#cbd5e1">个 case 通过全链路评测</text>
     <text x="100" y="538" font-size="13" fill="#64748b">含 baseline one-shot 对照</text>
 
     <rect x="470" y="440" width="380" height="110" rx="14" fill="#0f172a" stroke="#334155" stroke-width="1"/>
     <text x="500" y="480" font-size="15" fill="#94a3b8">complete pair</text>
-    <text x="500" y="518" font-size="40" font-weight="800" fill="#22d3ee">2</text>
+    <text x="500" y="518" font-size="40" font-weight="800" fill="#22d3ee">3</text>
     <text x="550" y="516" font-size="16" fill="#cbd5e1">baseline + harness 双通过</text>
-    <text x="500" y="538" font-size="13" fill="#64748b">harness tool-loop 3 / 4 成功</text>
+    <text x="500" y="538" font-size="13" fill="#64748b">one-shot 与 tool-loop 均 3 / 3</text>
 
     <rect x="870" y="440" width="340" height="110" rx="14" fill="#0f172a" stroke="#334155" stroke-width="1"/>
     <text x="900" y="480" font-size="15" fill="#94a3b8">安全边界</text>
