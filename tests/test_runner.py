@@ -42,6 +42,31 @@ def test_runner_llm_for_honors_provider_override_and_falls_back(tmp_path: Path):
     assert runner._llm_for(_RecordNone()) is runner.llm
 
 
+def test_provider_view_masks_key_and_clear_provider_key_drops_it():
+    from patchproof.manager import TaskRecord
+    from patchproof.models import TaskStatus
+
+    record = TaskRecord(
+        id="p1",
+        goal="goal goal goal",
+        repo_path=".",
+        check_command="python -m pytest -q",
+        max_iterations=3,
+        max_steps=8,
+        status=TaskStatus.QUEUED,
+        provider={"base_url": "https://x.test/v1", "model": "m", "api_key": "sk-secret"},
+    )
+    assert record.provider_view()["api_key"] == "***configured***"
+    record.clear_provider_key()
+    assert record.provider["api_key"] is None
+    assert record.provider_used_api_key is True
+    assert record.provider_view()["api_key"] == "***configured***"
+
+    record.provider["api_key"] = "sk-again"
+    assert record.provider_view()["api_key"] == "***configured***"
+    assert record.provider_view()["model"] == "m"
+
+
 def _manager(tmp_path: Path, actions: list[dict], *, max_steps: int = 10, max_invalid: int = 3):
     repo = tmp_path / "repo"
     repo.mkdir()

@@ -73,6 +73,7 @@ class TaskRecord:
     precondition_failures: int = 0
     commands: list[dict[str, Any]] = field(default_factory=list)
     provider: dict[str, Any] | None = None
+    provider_used_api_key: bool = False
     started_at: str | None = None
     task: asyncio.Task | None = None
     cancel_event: asyncio.Event = field(default_factory=asyncio.Event)
@@ -98,6 +99,17 @@ class TaskRecord:
             and self.required_check_evidence_generation == self.edit_generation
         )
 
+    def clear_provider_key(self) -> None:
+        """Drop the in-memory API key once the run has fully finished.
+
+        The task never resumes after ``_run`` returns, so the key no longer
+        needs to stay resident; ``provider_used_api_key`` keeps the masked
+        display consistent without holding the secret.
+        """
+        if self.provider and self.provider.get("api_key"):
+            self.provider_used_api_key = True
+            self.provider["api_key"] = None
+
     def provider_view(self) -> dict[str, str | None] | None:
         """Non-secret provider override for snapshots/logs: the api_key is
         replaced by a marker and never leaves process memory."""
@@ -107,7 +119,11 @@ class TaskRecord:
             "base_url": self.provider.get("base_url"),
             "model": self.provider.get("model"),
             "transport": self.provider.get("transport"),
-            "api_key": "***configured***" if self.provider.get("api_key") else None,
+            "api_key": (
+                "***configured***"
+                if self.provider.get("api_key") or self.provider_used_api_key
+                else None
+            ),
         }
 
     def snapshot(self, *, chain_head: str | None = None) -> TaskSnapshot:
@@ -244,6 +260,7 @@ class TaskManager:
                 record.failure_category = record.failure_category or "runner_stopped"
                 record.error = record.error or "任务执行器停止，状态可恢复但未形成完成证据"
                 await self._emit(record, TaskStatus.FAILED_RECOVERABLE.value, record.error, {})
+            record.clear_provider_key()
             self._persist(record)
 
     async def _emit(self, record: TaskRecord, stage: str, message: str, data: dict[str, Any]) -> TaskEvent:

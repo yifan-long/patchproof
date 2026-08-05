@@ -35,11 +35,6 @@ def test_task_create_with_provider_masks_api_key_and_persists_without_it(tmp_pat
         assert "sk-secret-123" not in response.text
         task_id = data["id"]
 
-        manager = api.app.state.manager
-        record = manager.get(task_id)
-        assert record.provider["api_key"] == "sk-secret-123"
-        assert record.provider["base_url"] == "https://example.test/v1"
-
         persisted = _json.loads(SQLiteStore(database).get_task(task_id)["provider_json"])
         assert persisted["api_key"] == "***configured***"
         assert "sk-secret-123" not in persisted["api_key"]

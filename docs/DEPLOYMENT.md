@@ -40,6 +40,7 @@
 - **安全约束（已生效）**：
   - api_key **不落 SQLite**：持久化的是 `provider_view()`（key 替换为 `***configured***`）。
   - key **不进日志 / 响应 / 快照**：`TaskSnapshot.provider` 与 API 响应都是脱敏视图。
+  - key **只在内存且运行期短驻**：`_run` 结束后立即 `clear_provider_key()` 从 `TaskRecord` 释放，长驻进程不保留已跑完任务的 key。
   - 前端 `localStorage` 存 key 有 XSS 风险——README 已知局限里注明。
   - 共享部署默认不设任何 `PATCHPROOF_ANTHROPIC_API_KEY` 全局密钥，否则会盖掉用户自带 key（`choose()` 优先读 `PATCHPROOF_*`）。
 
