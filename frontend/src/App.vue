@@ -296,7 +296,16 @@ async function createTask() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form)
     })
-    if (!response.ok) throw new Error((await response.json()).detail || '创建任务失败')
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}))
+      const detail = payload?.detail
+      let message = '创建任务失败'
+      if (typeof detail === 'string') message = detail
+      else if (Array.isArray(detail) && detail.length)
+        message = detail.map((item) => (typeof item?.msg === 'string' ? item.msg : JSON.stringify(item))).join('；')
+      else if (detail && typeof detail === 'object') message = JSON.stringify(detail)
+      throw new Error(message)
+    }
     currentTask.value = await response.json()
     history.value = [currentTask.value, ...history.value.filter((item) => item.id !== currentTask.value.id)]
     connectStream(currentTask.value.id)

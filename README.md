@@ -207,8 +207,13 @@ harness 侧全部 `awaiting_apply`，`required_check_verified` / `receipt_verifi
 后端：
 
 ```powershell
-.venv\Scripts\python.exe -m uvicorn patchproof.api:app --app-dir src --reload --port 8010
+.venv\Scripts\python.exe -m uvicorn patchproof.api:app --app-dir src --port 8010
 ```
+
+> **Windows 注意**：不要加 `--reload`。`uvicorn --reload` 在 Windows 上会把 worker 跑在
+> `SelectorEventLoop` 上，导致 `run_check`（`asyncio.create_subprocess_exec`）抛
+> `NotImplementedError`，所有任务都无法通过验证。`src/patchproof/api.py` 已显式固定
+> Windows Proactor 事件循环策略，配合不加 `--reload` 即可正常运行。
 
 前端：
 
