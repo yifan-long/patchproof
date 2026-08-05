@@ -1,0 +1,35 @@
+# VCS
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Data (secrets, DB, eval cache, runs, archives)
+data/
+archive/
+*.db
+
+# Local env
+*.local.env
+.env
+.env.*
+!.env.example
+
+# Editors/OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Docs about deployment plan keep the repo small

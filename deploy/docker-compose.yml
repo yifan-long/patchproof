@@ -1,0 +1,43 @@
+# PatchProof 方案 A 部署：backend + frontend build + Caddy HTTPS
+services:
+  frontend-build:
+    build:
+      context: ..
+      dockerfile: deploy/frontend.Dockerfile
+    volumes:
+      - webroot:/out
+    command: sh -c "cp -r dist/* /out/"
+    restart: "no"
+
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/backend.Dockerfile
+    ports:
+      - "127.0.0.1:8010:8010"
+    volumes:
+      - ./data:/app/data
+    environment:
+      PATCHPROOF_DATABASE_PATH: /app/data/patchproof.db
+      PATCHPROOF_CORS_ORIGINS: "https://YOUR_DOMAIN"
+      # 不设任何全局 LLM key —— 用户在前端自带（见 README 待实现 / docs/DEPLOYMENT.md）
+    depends_on:
+      - frontend-build
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - webroot:/srv/www:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  webroot:
+  caddy_data:

@@ -314,8 +314,8 @@ Provider 配置只读自 `archive/researchflow/.env`（DEEPSEEK_* / ANTHROPIC_*�
 
 | 状态 | 功能 | 说明 |
 |---|---|---|
+| ✅ 已实现 | **自带 API key（per-user provider）** | 前端填 base_url / model / api_key，随任务走；后端按请求构建独立 `LLMClient`，key 只存内存、不落库不进日志，`deploy/` 构件已随仓库提供 |
 | 📌 规划中 | **远端 git 仓库支持（任务路径）** | `repo_path` 接受 `https://github.com/...` 时自动 clone 到工作区再快照；只允许 HTTPS，与评测路径 `confirm_download` 门禁对齐（方式 B） |
-| 📌 规划中 | **自带 API key（per-user provider）** | 前端填 base_url / model / api_key，随任务走；后端按请求构建独立 `LLMClient`，key 只存内存、不回显、不进日志不落库 |
 | 📌 规划中 | **简单用户体系 / 鉴权** | 反向代理层 Basic Auth 起步，后续可加登录；配合自带 key 支持多用户共享部署 |
 | 💭 备选 | **更多 BugsInPy 官方 case** | 扩展语料分布（不同难度/类别） |
 | 💭 备选 | **LSP / 语义导航** | 给工具循环加基于符号的精准跳转，替代纯静态索引 |

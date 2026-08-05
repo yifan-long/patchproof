@@ -31,16 +31,17 @@
 
 前端用 Vite 构建，产物是纯静态文件；`/api` 前缀在反代层剥掉并转发给 8010。
 
-## 2. 自带 API key（前置功能，需开发）
+## 2. 自带 API key（已实现）
 
-现状：provider 配置在启动时从全局 env / `archive/researchflow/.env` 读一次，`LLMClient` 全程用一个 `Settings`。**没有 per-user key**，所以「api 自己填」需要先实现 README Roadmap 里的这项。规划如下：
+前端「LLM Provider」折叠面板可填 `base_url` / `model` / `api_key` / `transport`，存 `localStorage`，随 `POST /tasks` 提交。
 
-1. **前端**：新增「Provider 设置」面板（`base_url` / `model` / `api_key`），存 `localStorage`；建任务时随请求带给后端。
-2. **后端**：`POST /tasks` 增加可选 `provider` 覆盖字段，存进 `TaskRecord`；`runner` 构造 `LLMClient` 时用显式构造的 `Settings(anthropic_api_key=..., anthropic_base_url=..., anthropic_model=...)`（现有 `config.choose()` 在未设置 `PATCHPROOF_*` 环境变量时会尊重显式构造值，天然支持 per-request 覆盖）。
-3. **安全约束**：
-   - key 只存在后端进程内存的 `TaskRecord`，**不写 SQLite、不进日志**（`LLMClient.usage`/metadata 不含 key）。
-   - 前端 `localStorage` 存 key 有 XSS 风险——README 已知局限里注明，或改用后端短会话托管。
-   - 共享部署默认不设任何 `PATCHPROOF_ANTHROPIC_API_KEY` 之类全局密钥，否则会盖掉用户自带 key（`choose()` 优先读 `PATCHPROOF_*`）。
+- 后端 `POST /tasks` 接受可选 `provider`；`TaskRecord` 内存持有完整 provider（含 key）。
+- `runner` 每次 `run()` 用显式构造的 `Settings(anthropic_api_key=..., ...)` 构建独立 `LLMClient`（共享 `AgentRunner` 不做全局覆盖，避免并发竞态）。
+- **安全约束（已生效）**：
+  - api_key **不落 SQLite**：持久化的是 `provider_view()`（key 替换为 `***configured***`）。
+  - key **不进日志 / 响应 / 快照**：`TaskSnapshot.provider` 与 API 响应都是脱敏视图。
+  - 前端 `localStorage` 存 key 有 XSS 风险——README 已知局限里注明。
+  - 共享部署默认不设任何 `PATCHPROOF_ANTHROPIC_API_KEY` 全局密钥，否则会盖掉用户自带 key（`choose()` 优先读 `PATCHPROOF_*`）。
 
 ## 3. 免费部署方案对比
 
@@ -181,9 +182,10 @@ cd /opt/patchproof && docker compose up -d --build
 - **资源**：Compose 里给后端 `mem_limit`；`data/runs/` 定期清理过期工作区（快照可能占用磁盘）。
 - **升级**：git pull 后端 + `docker compose up -d --build`，前端重新 build 替换 `frontend-dist/`。
 
-## 8. 上线前必须完成的两件事
+## 8. 上线前清单
 
-1. 实现 README Roadmap 的「**自带 API key（per-user provider）**」——否则用户无法用自己的 key。
-2. 实现「**远端 git 仓库支持（任务路径，方式 B）**」——否则用户只能填服务器上的本地路径，体验差。
+部署构件（`deploy/backend.Dockerfile`、`frontend.Dockerfile`、`docker-compose.yml`、`Caddyfile`、`.dockerignore`）与「自带 API key」已随仓库提交。上线前只需：
 
-> 这两项都已列入 [README 待实现](README.md)。
+1. 把 `docker-compose.yml` 里的 `YOUR_DOMAIN`（Caddyfile 也是）换成你的真实域名。
+2. 确认 `frontend/dist` 由 `frontend-build` 服务自动构建（首次 `docker compose up --build`）。
+3. 远端 git 仓库支持（方式 B）尚未实现——v1 让用户填服务器上已 clone 的本地路径即可。
