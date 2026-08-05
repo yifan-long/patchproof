@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import tempfile
 import time
 from collections.abc import Callable, Iterable
@@ -394,6 +395,18 @@ class EvaluationOrchestrator:
         for relative in index.files:
             if relative in evidence["stdout"] or relative in evidence["stderr"]:
                 focus_paths.append(relative)
+        # A failing output often names the offending function but not its file
+        # path (e.g. ``jsonable_encoder() got an unexpected keyword argument``).
+        # Files that define a symbol named by the failure are just as likely to
+        # hold the defect as files whose path appears literally, so include them
+        # in the focused context. Match whole words only so substrings such as
+        # ``test`` inside ``tests/...`` do not flood the focus set.
+        for symbol in index.symbols:
+            if len(symbol.name) >= 4 and (
+                re.search(rf"\b{re.escape(symbol.name)}\b", evidence["stdout"])
+                or re.search(rf"\b{re.escape(symbol.name)}\b", evidence["stderr"])
+            ):
+                focus_paths.append(symbol.path)
         if case.test_file and case.test_file not in indexed:
             # The official failing test is introduced by the fix and is absent
             # from this snapshot, so the failure output carries no assertion

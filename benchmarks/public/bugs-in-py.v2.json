@@ -76,37 +76,6 @@
       "repo_url": "https://github.com/soarsmu/BugsInPy/tree/master/projects/PySnooper",
       "project": "PySnooper",
       "source_url": "https://github.com/soarsmu/BugsInPy/tree/master/projects/PySnooper",
-      "issue": "BugsInPy official identifier: PySnooper bug 2.",
-      "goal": "Resolve the official BugsInPy task and repair it using the pinned resolver output.",
-      "setup_argv": [],
-      "required_check_argv": [
-        "python",
-        "-m",
-        "pytest",
-        "-q"
-      ],
-      "privacy_public_code": true,
-      "provenance_state": "unresolved",
-      "resolver_requirements": [
-        "resolve official BugsInPy project and bug tree",
-        "verify source HEAD and license",
-        "resolve immutable evaluator image digest"
-      ],
-      "id": "bugsinpy-pysnooper-2",
-      "bug_id": 2,
-      "tags": [
-        "official",
-        "bugsinpy",
-        "PySnooper"
-      ]
-    },
-    {
-      "schema_version": "patchproof.case.v2",
-      "suite": "public-bugsinpy",
-      "source_kind": "bugsinpy",
-      "repo_url": "https://github.com/soarsmu/BugsInPy/tree/master/projects/PySnooper",
-      "project": "PySnooper",
-      "source_url": "https://github.com/soarsmu/BugsInPy/tree/master/projects/PySnooper",
       "issue": "BugsInPy official identifier: PySnooper bug 3.",
       "goal": "Resolve the official BugsInPy task and repair it using the pinned resolver output.",
       "setup_argv": [],

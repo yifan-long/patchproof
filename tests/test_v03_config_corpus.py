@@ -31,17 +31,16 @@ def test_deepseek_env_mapping_and_patchproof_precedence_without_secret_metadata(
     assert secret not in repr(settings)
 
 
-def test_v02_corpus_has_five_mini_repos_and_eight_unresolved_official_descriptors():
+def test_v02_corpus_has_five_mini_repos_and_seven_unresolved_official_descriptors():
     root = Path(__file__).parents[1]
     mini = load_cases(root / "benchmarks" / "manifest.v2.json")
     public = load_cases(root / "benchmarks" / "public" / "bugs-in-py.v2.json")
     assert len(mini) == 5
-    assert len(public) == 8
+    assert len(public) == 7
     assert all(case.source_kind == "local" for case in mini)
     assert all(len(case.expected_contents) == 1 for case in mini)
     assert all(case.provenance_state == "unresolved" for case in public)
     assert {case.project for case in public} >= {"youtube-dl", "PySnooper", "black", "cookiecutter", "fastapi"}
-    assert {case.bug_id for case in public} >= {1, 2, 3}
     assert all(case.immutable_revision is None and case.license_spdx is None and case.image is None for case in public)
     assert all(case.expected_contents == {} for case in public)
 

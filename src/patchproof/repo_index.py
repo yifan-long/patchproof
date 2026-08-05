@@ -122,7 +122,16 @@ class RepoIndex:
                 score += 2
             candidates.append((score, rel))
         candidates.sort(key=lambda item: (-item[0], item[1]))
-        selected = [rel for score, rel in candidates if score > 0][:max_files]
+        # Explicit focus files are always wanted: the initial-failure evidence
+        # (or a symbol it names) points at them, so they must not be crowded
+        # out by many equally-boosted candidates. Reserve slots for them first.
+        focused = sorted(rel for rel in self.files if rel in normalized_focus)
+        focused = focused[:max_files]
+        selected = focused + [
+            rel
+            for score, rel in candidates
+            if rel not in normalized_focus and score > 0
+        ][: max_files - len(focused)]
         if not selected:
             selected = self.files[:max_files]
         # Distribute the budget across files instead of letting the first
