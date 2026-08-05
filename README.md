@@ -1,30 +1,137 @@
 # PatchProof
 
-> Evidence-first Coding Agent Harness —— 让一个 Agent 有资格声称"我完成了"。
+> 让 AI 编码 Agent 证明自己"真的改完了"，而不是嘴上说改完了。
 
-PatchProof 不是又一个 Claude Code / OpenHands / Aider 的克隆，它专门回答一个问题：
+PatchProof 是一个**约束并验证编码 Agent** 的框架：它不是又一个"让 AI 帮你改代码"的工具，而是专门回答所有 AI 编程工具都绕不开的问题——**模型说它改完了，你凭什么信？**
 
-> **Agent 凭什么有资格声称"完成了"？**
+## 目录
 
-它的答案是一条可验证的证据链：**Inspect → Plan → Typed Tool Loop → Test/Repair → Patch Receipt → Human Apply**。没有证据，模型说"完成"不算数；证据被篡改，链头立刻暴露；编辑没有前置校验，拒绝盲写。
+- [它是什么](#它是什么)
+- [一句话看懂](#一句话看懂)
+- [通俗版：它到底怎么工作](#通俗版它到底怎么工作)
+- [真实例子：BugsInPy 官方 bug](#真实例子bugsinpy-官方-bug)
+- [它解决什么、不解决什么](#它解决什么不解决什么)
+- [为什么证据可信](#为什么证据可信)
+- [实测评测结果](#实测评测结果)
+- [真实基建 bug 复盘](#真实基建-bug-复盘)
+- [快速开始](#快速开始)
+- [Benchmark 用法](#benchmark-用法)
+- [架构](#架构)
+- [安全模型](#安全模型)
+- [已知局限](#已知局限)
+- [文档](#文档)
 
-```mermaid
-flowchart LR
-    A[真实仓库] --> B{WorkspaceStrategy}
-    B -->|clean Git| C[detached worktree]
-    B -->|dirty/non-Git| D[snapshot fallback]
-    C --> E[typed agent loop]
-    D --> E
-    E --> F[argv policy + human approval]
-    F --> G[test evidence]
-    G --> H[Patch Receipt + SHA-256 event chain]
-    H --> I[human review diff]
-    I --> J[baseline-checked Apply]
+---
+
+## 它是什么
+
+你丢给它一个"故意坏了"的代码仓库，它在隔离环境里驱动模型完成闭环，并把每一步变成可验证的证据。核心只有一句：**"完成"必须靠证据证明，不能靠模型自述。**
+
+---
+
+## 一句话看懂
+
+```
+你给的任务
+   │
+   ▼
+模型只能用 6 个受控工具干活 ──► 每走一步，动作/结果都写进
+(搜代码 / 读文件 / 改代码 /           不可篡改的 SHA-256 事件链
+ 看diff / 跑测试 / 声明完成)
+   │
+   ▼
+必须用你指定的那条验证命令、在改完代码之后、真实跑通 ──► 才算"完成"
+   │
+   ▼
+生成一张 Patch Receipt（改了什么、前后哈希、测试结果、谁批准的）
+   │
+   ▼
+你看 diff → 你决定要不要 Apply
 ```
 
 ---
 
-## 实测评测结果（真实模型）
+## 通俗版：它到底怎么工作
+
+把 AI 想成装修工。你请他来修水管（改代码），PatchProof 是全程跟着他的监理，保证三件事：**他没乱来、他真的修好了、你事后能查证。**
+
+### 第一关：隔离——不让 AI 直接动你的东西
+
+AI 工作的不是你的仓库，而是一个**隔离副本**（快照或 git worktree）。它怎么改都碰不到你真正的代码，改完出一份 diff，你点头它才敢碰原文件。就像装修工先在样板间练手，不直接拆你家的墙。
+
+### 第二关：只准用 6 种工具，干的每件事都留痕
+
+模型每走一步，只能从 6 个动作里选一个：**搜代码、读文件、改代码、看 diff、跑测试、声明完成**。它不能凭空执行 shell、不能联网、不能删文件（这些都要人工审批）。
+
+它的每一次动作、每一条观察，都被记进一条 **SHA-256 哈希链**——就像施工日志，每天现场拍照签字；想篡改任何一天，整本日志的校验就对不上。
+
+### 第三关：改代码必须"有凭有据"
+
+模型要改代码，必须给出当前文件里**精确存在的旧片段**（或匹配的文件哈希），PatchProof 校验通过才写入。它编一段文件里根本不存在的代码？直接拒绝。这就堵死了"AI 幻觉代码"最常见的坑。
+
+### 第四关：说"完成了"之前，必须当场验收
+
+模型想声明完成？必须用**你指定的那一条验证命令**（比如 `pytest`），在它最后一次改动之后，真实跑通。而且必须是同一条命令——它跑个 `python --version` 这种跟任务无关的命令糊弄你，不算数。
+
+### 第五关：一张不可伪造的验收单
+
+全部通过后，PatchProof 生成一张 **Patch Receipt**：改了什么文件、每个文件改动前后的哈希、diff 的哈希、跑的命令和退出码、谁批准了什么、测试结果，最后盖一个基于整条事件链的哈希戳。
+
+这张单子是原子的（要么完整写入，要么不写）。你拿它去复核 diff，满意了才 **Apply** 回真实仓库。
+
+### 预算：AI 不能无限烧钱
+
+每次模型调用前先按最坏情况"冻结"预算额度；请求数、token 数、花费都进共享账本并有硬上限。钱烧完了立刻停，不会悄悄跑飞。
+
+### 诚实：失败就是失败
+
+环境装不起来、模型钱不够、输出被截断、编辑前置校验没过——每种情况都有明确分类，**不会把一个跑了一半的结果包装成"成功"**。
+
+> **一句话：PatchProof 把一个"AI 说改完了"的黑盒，变成"你随时能查账、能验收、能追责"的透明过程。**
+
+---
+
+## 真实例子：BugsInPy 官方 bug
+
+让 `deepseek-v4-flash` 修 PySnooper issue #124（中文源码被 `ascii` 解码乱码）：
+
+**模型在 8 步内完成：** 读失败测试 → 定位 `pysnooper/tracer.py` → 把 `encoding = 'ascii'` 改成 `'utf-8'` → 跑官方测试 → 通过 → 生成 receipt → 等待人工 Apply。
+
+```
+✅ 初始失败证据：pytest -q tests/test_chinese.py::test_chinese  →  returncode 1（中文乱码断言失败）
+✅ required-check： 最后一次编辑后，用完全一致的命令真实跑通
+✅ Patch Receipt：  文件前后哈希、diff 哈希、测试结果、事件链头，全部验证通过
+✅ 提交给人类 review，不自动写回仓库
+```
+
+完整实测结果见下方 [实测评测结果](#实测评测结果)。
+
+---
+
+## 它解决什么、不解决什么
+
+**解决**：AI 改代码的结果**不可验证**、**不可追责**。PatchProof 把"完成"从模型的自述变成可审计的证据。
+
+**不解决（也明确不假装解决）**：
+- 不是又一个 IDE 插件 / 终端 Agent，不追求"工具多、改得快"。
+- 不给模型任意 shell 权限，组合命令、联网、删除都要人工审批。
+- 不自动把你的仓库改掉——永远先出 diff，你确认后才 Apply。
+- 本地进程执行器诚实标注 `local_smoke_only`，绝不冒充 Docker 隔离。
+
+---
+
+## 为什么证据可信
+
+- **required-check 资格门禁**（`runner.py`）：只有与任务 `check_command` **完全一致**的 argv，在**最近一次编辑之后**成功执行，`finish(verified)` 才被接受。
+- **不可篡改事件链**（`storage.py`）：计划、动作、观察、审批、结果全部串 SHA-256 哈希链，篡改即暴露。
+- **Patch Receipt**（`receipt.py`）：目标、计划、工具统计、文件前后哈希、diff 哈希、命令退出码、审批轨迹、测试结果、verdict 统一为可验证 JSON，原子写入 `data/runs/<id>/receipt.json`。
+- **编辑前置校验**：`apply_edit` 必须提供精确唯一 `old_text` 或匹配的 `expected_sha256`，禁止盲写；行尾无关匹配（CRLF/LF 兼容）。
+- **诚实失败分类**：`baseline_precondition_failed` / `llm_budget_exhausted` / `provider_output_truncated` / `environment_unreproducible`…失败就是失败，绝不把部分结果包装成成功。
+- **永不自动 Apply**：receipt 生成后必须人工 review diff 再 Apply；Apply 前校验 HEAD、工作树与源文件 manifest。
+
+---
+
+## 实测评测结果
 
 ### 配置
 
@@ -81,18 +188,7 @@ harness 侧全部 `awaiting_apply`，`required_check_verified` / `receipt_verifi
 
 ---
 
-## 为什么证据可信
-
-- **required-check 资格门禁**（`runner.py`）：只有与任务 `check_command` **完全一致**的规范化 argv，在**最近一次编辑之后**成功执行，`finish(verified)` 才被接受。`python --version` 之类的任意成功命令不能声称完成。
-- **不可篡改事件链**（`storage.py`）：每个计划、tool action、observation、审批、结果都串成 SHA-256 哈希链，篡改即暴露链头不一致。
-- **Patch Receipt**（`receipt.py`）：目标、基线、模型、计划、工具统计、文件前后 hash、diff hash、命令退出码、审批轨迹、测试结果、verdict 统一为可验证 JSON，原子写入 `data/runs/<id>/receipt.json`。
-- **编辑前置校验**：`apply_edit` 必须提供精确唯一 `old_text` 或匹配的 `expected_sha256`，禁止盲写；行尾无关匹配（CRLF/LF 兼容）。
-- **诚实失败分类**：`baseline_precondition_failed` / `llm_budget_exhausted` / `provider_output_truncated` / `environment_unreproducible`…失败就是失败，绝不把部分结果包装成成功。
-- **永不自动 Apply**：receipt 生成后必须人工 review diff 再 Apply；Apply 前校验 HEAD、工作树与源文件 manifest。
-
----
-
-## 真实系统中暴露并修复的基建 bug
+## 真实基建 bug 复盘
 
 在真实评测跑通过程中，暴露了 5 个单测覆盖不到的基础设施问题（每个都可审计、可回滚）：
 
