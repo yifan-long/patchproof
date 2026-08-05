@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a0e1c"/>
+      <stop offset="0.5" stop-color="#10162e"/>
+      <stop offset="1" stop-color="#1a1036"/>
+    </linearGradient>
+    <radialGradient id="glowCyan" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowViolet" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#a78bfa" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#a78bfa" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="title" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="0.5" stop-color="#60a5fa"/>
+      <stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-opacity="0.04" stroke-width="1"/>
+    </pattern>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#grid)"/>
+  <ellipse cx="300" cy="180" rx="420" ry="300" fill="url(#glowCyan)"/>
+  <ellipse cx="1000" cy="480" rx="460" ry="320" fill="url(#glowViolet)"/>
+
+  <!-- Title -->
+  <text x="640" y="96" text-anchor="middle" font-size="72" font-weight="800" fill="url(#title)" letter-spacing="2">PatchProof</text>
+  <text x="640" y="140" text-anchor="middle" font-size="26" fill="#cbd5e1" font-weight="300">让 AI 编码 Agent 证明自己「真的改完了」，而不是嘴上说改完了</text>
+
+  <!-- Pipeline -->
+  <g filter="url(#shadow)">
+    <!-- Stage 1: Task -->
+    <rect x="70" y="210" width="250" height="180" rx="16" fill="#16203a" stroke="#38bdf8" stroke-opacity="0.55" stroke-width="1.5"/>
+    <circle cx="110" cy="248" r="18" fill="#0ea5e9"/>
+    <path d="M 102 248 h 16 M 110 240 v 16" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="195" y="258" text-anchor="middle" font-size="19" font-weight="700" fill="#e0f2fe">损坏的仓库</text>
+    <text x="195" y="320" text-anchor="middle" font-size="14" fill="#94a3b8">目标 + 一条官方验证命令</text>
+    <text x="195" y="344" text-anchor="middle" font-size="14" fill="#94a3b8">隔离副本，永不直接动原仓库</text>
+
+    <!-- Stage 2: Tools + chain -->
+    <rect x="385" y="210" width="250" height="180" rx="16" fill="#1a1f3d" stroke="#a78bfa" stroke-opacity="0.55" stroke-width="1.5"/>
+    <circle cx="425" cy="248" r="18" fill="#8b5cf6"/>
+    <path d="M 417 244 l 5 5 11 -12" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <text x="510" y="258" text-anchor="middle" font-size="19" font-weight="700" fill="#ede9fe">6 个受控工具</text>
+    <text x="510" y="320" text-anchor="middle" font-size="14" fill="#a5b4fc">每一步都写进不可篡改的</text>
+    <text x="510" y="344" text-anchor="middle" font-size="14" fill="#a5b4fc">SHA-256 事件链</text>
+
+    <!-- Stage 3: Required-check -->
+    <rect x="700" y="210" width="250" height="180" rx="16" fill="#0d2b26" stroke="#34d399" stroke-opacity="0.55" stroke-width="1.5"/>
+    <circle cx="740" cy="248" r="18" fill="#10b981"/>
+    <path d="M 733 248 l 5 5 11 -13" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <text x="825" y="258" text-anchor="middle" font-size="19" font-weight="700" fill="#d1fae5">required-check 门禁</text>
+    <text x="825" y="320" text-anchor="middle" font-size="14" fill="#6ee7b7">必须用你指定的那条命令，</text>
+    <text x="825" y="344" text-anchor="middle" font-size="14" fill="#6ee7b7">在最后一次改动之后真实跑通</text>
+
+    <!-- Stage 4: Receipt -->
+    <rect x="1015" y="210" width="250" height="180" rx="16" fill="#3b1d2e" stroke="#fb7185" stroke-opacity="0.55" stroke-width="1.5"/>
+    <circle cx="1055" cy="248" r="18" fill="#f43f5e"/>
+    <path d="M 1047 246 l 3 3 4 -3 7 -7 M 1047 250 l 3 3 4 -3" stroke="#ffffff" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <text x="1140" y="258" text-anchor="middle" font-size="19" font-weight="700" fill="#ffe4e6">Patch Receipt</text>
+    <text x="1140" y="320" text-anchor="middle" font-size="14" fill="#fda4af">前后哈希 / diff / 测试结果</text>
+    <text x="1140" y="344" text-anchor="middle" font-size="14" fill="#fda4af">你看 diff，满意才 Apply</text>
+  </g>
+
+  <!-- Arrows -->
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <line x1="320" y1="300" x2="380" y2="300" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="635" y1="300" x2="695" y2="300" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="950" y1="300" x2="1010" y2="300" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <!-- Stat bar -->
+  <g>
+    <rect x="70" y="440" width="380" height="110" rx="14" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+    <text x="100" y="480" font-size="15" fill="#94a3b8">实测评测 · 官方 BugsInPy 公开 case</text>
+    <text x="100" y="518" font-size="40" font-weight="800" fill="#34d399">4</text>
+    <text x="150" y="516" font-size="16" fill="#cbd5e1">个 case 通过全链路评测</text>
+    <text x="100" y="538" font-size="13" fill="#64748b">含 baseline one-shot 对照</text>
+
+    <rect x="470" y="440" width="380" height="110" rx="14" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+    <text x="500" y="480" font-size="15" fill="#94a3b8">complete pair</text>
+    <text x="500" y="518" font-size="40" font-weight="800" fill="#22d3ee">2</text>
+    <text x="550" y="516" font-size="16" fill="#cbd5e1">baseline + harness 双通过</text>
+    <text x="500" y="538" font-size="13" fill="#64748b">harness tool-loop 3 / 4 成功</text>
+
+    <rect x="870" y="440" width="340" height="110" rx="14" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+    <text x="900" y="480" font-size="15" fill="#94a3b8">安全边界</text>
+    <text x="900" y="518" font-size="40" font-weight="800" fill="#fb7185">0</text>
+    <text x="950" y="516" font-size="16" fill="#cbd5e1">次自动 Apply</text>
+    <text x="900" y="538" font-size="13" fill="#64748b">所有写回前人工确认</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="640" y="610" text-anchor="middle" font-size="14" fill="#475569">模型 deepseek-v4-flash · 隔离 Docker 执行 · 失败即失败，绝不包装成成功</text>
+</svg>
