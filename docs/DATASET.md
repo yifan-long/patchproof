@@ -25,6 +25,9 @@ official BugsInPy identifiers and official metadata URLs only:
 | --- | ---: | --- |
 | youtube-dl | 2 | `bugsinpy-checkout -p youtube-dl -v 0 -i 2` |
 | PySnooper | 1 | official BugsInPy project/bug tree |
+| PySnooper | 2 | official BugsInPy project/bug tree |
+| PySnooper | 3 | official BugsInPy project/bug tree |
+| fastapi | 1 | official BugsInPy project/bug tree |
 | black | 1 | official BugsInPy project/bug tree |
 | cookiecutter | 1 | official BugsInPy project/bug tree |
 | httpie | 1 | resolver-gated official project/bug tree |

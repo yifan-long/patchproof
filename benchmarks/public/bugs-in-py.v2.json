@@ -19,11 +19,24 @@
       "issue": "BugsInPy official identifier: youtube-dl bug 2.",
       "goal": "Resolve the official BugsInPy task and repair it using the pinned resolver output.",
       "setup_argv": [],
-      "required_check_argv": ["python", "-m", "pytest", "-q"],
+      "required_check_argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
       "privacy_public_code": true,
       "provenance_state": "unresolved",
-      "resolver_requirements": ["resolve official BugsInPy project and bug tree", "verify source HEAD and license", "resolve immutable evaluator image digest"],
-      "tags": ["official", "bugsinpy", "youtube-dl"]
+      "resolver_requirements": [
+        "resolve official BugsInPy project and bug tree",
+        "verify source HEAD and license",
+        "resolve immutable evaluator image digest"
+      ],
+      "tags": [
+        "official",
+        "bugsinpy",
+        "youtube-dl"
+      ]
     },
     {
       "schema_version": "patchproof.case.v2",
@@ -37,11 +50,117 @@
       "issue": "BugsInPy official identifier: PySnooper bug 1.",
       "goal": "Resolve the official BugsInPy task and repair it using the pinned resolver output.",
       "setup_argv": [],
-      "required_check_argv": ["python", "-m", "pytest", "-q"],
+      "required_check_argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
       "privacy_public_code": true,
       "provenance_state": "unresolved",
-      "resolver_requirements": ["resolve official BugsInPy project and bug tree", "verify source HEAD and license", "resolve immutable evaluator image digest"],
-      "tags": ["official", "bugsinpy", "PySnooper"]
+      "resolver_requirements": [
+        "resolve official BugsInPy project and bug tree",
+        "verify source HEAD and license",
+        "resolve immutable evaluator image digest"
+      ],
+      "tags": [
+        "official",
+        "bugsinpy",
+        "PySnooper"
+      ]
+    },
+    {
+      "schema_version": "patchproof.case.v2",
+      "suite": "public-bugsinpy",
+      "source_kind": "bugsinpy",
+      "repo_url": "https://github.com/soarsmu/BugsInPy/tree/master/projects/PySnooper",
+      "project": "PySnooper",
+      "source_url": "https://github.com/soarsmu/BugsInPy/tree/master/projects/PySnooper",
+      "issue": "BugsInPy official identifier: PySnooper bug 2.",
+      "goal": "Resolve the official BugsInPy task and repair it using the pinned resolver output.",
+      "setup_argv": [],
+      "required_check_argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "privacy_public_code": true,
+      "provenance_state": "unresolved",
+      "resolver_requirements": [
+        "resolve official BugsInPy project and bug tree",
+        "verify source HEAD and license",
+        "resolve immutable evaluator image digest"
+      ],
+      "id": "bugsinpy-pysnooper-2",
+      "bug_id": 2,
+      "tags": [
+        "official",
+        "bugsinpy",
+        "PySnooper"
+      ]
+    },
+    {
+      "schema_version": "patchproof.case.v2",
+      "suite": "public-bugsinpy",
+      "source_kind": "bugsinpy",
+      "repo_url": "https://github.com/soarsmu/BugsInPy/tree/master/projects/PySnooper",
+      "project": "PySnooper",
+      "source_url": "https://github.com/soarsmu/BugsInPy/tree/master/projects/PySnooper",
+      "issue": "BugsInPy official identifier: PySnooper bug 3.",
+      "goal": "Resolve the official BugsInPy task and repair it using the pinned resolver output.",
+      "setup_argv": [],
+      "required_check_argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "privacy_public_code": true,
+      "provenance_state": "unresolved",
+      "resolver_requirements": [
+        "resolve official BugsInPy project and bug tree",
+        "verify source HEAD and license",
+        "resolve immutable evaluator image digest"
+      ],
+      "id": "bugsinpy-pysnooper-3",
+      "bug_id": 3,
+      "tags": [
+        "official",
+        "bugsinpy",
+        "PySnooper"
+      ]
+    },
+    {
+      "schema_version": "patchproof.case.v2",
+      "suite": "public-bugsinpy",
+      "source_kind": "bugsinpy",
+      "repo_url": "https://github.com/soarsmu/BugsInPy/tree/master/projects/fastapi",
+      "project": "fastapi",
+      "source_url": "https://github.com/soarsmu/BugsInPy/tree/master/projects/fastapi",
+      "issue": "BugsInPy official identifier: fastapi bug 1.",
+      "goal": "Resolve the official BugsInPy task and repair it using the pinned resolver output.",
+      "setup_argv": [],
+      "required_check_argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
+      "privacy_public_code": true,
+      "provenance_state": "unresolved",
+      "resolver_requirements": [
+        "resolve official BugsInPy project and bug tree",
+        "verify source HEAD and license",
+        "resolve immutable evaluator image digest"
+      ],
+      "id": "bugsinpy-fastapi-1",
+      "tags": [
+        "official",
+        "bugsinpy",
+        "fastapi"
+      ],
+      "bug_id": 1
     },
     {
       "schema_version": "patchproof.case.v2",
@@ -55,11 +174,24 @@
       "issue": "BugsInPy official identifier: black bug 1.",
       "goal": "Resolve the official BugsInPy task and repair it using the pinned resolver output.",
       "setup_argv": [],
-      "required_check_argv": ["python", "-m", "pytest", "-q"],
+      "required_check_argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
       "privacy_public_code": true,
       "provenance_state": "unresolved",
-      "resolver_requirements": ["resolve official BugsInPy project and bug tree", "verify source HEAD and license", "resolve immutable evaluator image digest"],
-      "tags": ["official", "bugsinpy", "black"]
+      "resolver_requirements": [
+        "resolve official BugsInPy project and bug tree",
+        "verify source HEAD and license",
+        "resolve immutable evaluator image digest"
+      ],
+      "tags": [
+        "official",
+        "bugsinpy",
+        "black"
+      ]
     },
     {
       "schema_version": "patchproof.case.v2",
@@ -73,11 +205,24 @@
       "issue": "BugsInPy official identifier: cookiecutter bug 1.",
       "goal": "Resolve the official BugsInPy task and repair it using the pinned resolver output.",
       "setup_argv": [],
-      "required_check_argv": ["python", "-m", "pytest", "-q"],
+      "required_check_argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
       "privacy_public_code": true,
       "provenance_state": "unresolved",
-      "resolver_requirements": ["resolve official BugsInPy project and bug tree", "verify source HEAD and license", "resolve immutable evaluator image digest"],
-      "tags": ["official", "bugsinpy", "cookiecutter"]
+      "resolver_requirements": [
+        "resolve official BugsInPy project and bug tree",
+        "verify source HEAD and license",
+        "resolve immutable evaluator image digest"
+      ],
+      "tags": [
+        "official",
+        "bugsinpy",
+        "cookiecutter"
+      ]
     },
     {
       "schema_version": "patchproof.case.v2",
@@ -91,11 +236,25 @@
       "issue": "BugsInPy official identifier: httpie bug 1.",
       "goal": "Resolve the official BugsInPy task and repair it using the pinned resolver output.",
       "setup_argv": [],
-      "required_check_argv": ["python", "-m", "pytest", "-q"],
+      "required_check_argv": [
+        "python",
+        "-m",
+        "pytest",
+        "-q"
+      ],
       "privacy_public_code": true,
       "provenance_state": "unresolved",
-      "resolver_requirements": ["resolve official BugsInPy project and bug tree only if bug 1 is machine-resolvable", "verify source HEAD and license", "resolve immutable evaluator image digest"],
-      "tags": ["official", "bugsinpy", "httpie", "resolver-gated"]
+      "resolver_requirements": [
+        "resolve official BugsInPy project and bug tree only if bug 1 is machine-resolvable",
+        "verify source HEAD and license",
+        "resolve immutable evaluator image digest"
+      ],
+      "tags": [
+        "official",
+        "bugsinpy",
+        "httpie",
+        "resolver-gated"
+      ]
     }
   ]
 }

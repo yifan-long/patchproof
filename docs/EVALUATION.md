@@ -125,41 +125,60 @@ cancel, restart interruption, event tamper, receipt/artifact tamper, and budget
 exhaustion. The manifest is an expectation contract; the runner is the testable
 implementation.
 
-## Reproducing the public BugsInPy case
+## Reproducing the public BugsInPy cases
 
-Only `bugsinpy-pysnooper-1` is currently `verified_failing`; the other four
-public descriptors are `environment_unreproducible` (Python 3.6/3.7 runtime
-mismatch with the Python 3.8 evaluator) and are honestly excluded from scoring.
+Four BugsInPy public cases are `verified_failing` on the pinned Python 3.8
+evaluator: `pysnooper-1`, `pysnooper-2`, `pysnooper-3`, `fastapi-1`. The other
+four public descriptors are `environment_unreproducible` (Python 3.6/3.7
+runtime mismatch with the Python 3.8 evaluator) and are honestly excluded from
+scoring.
 
-Steps to reproduce the reported `complete_pairs: 1` result:
+Steps to reproduce the reported results:
 
 ```powershell
-# 1. Build the pinned evaluator image and resolve the official snapshot.
+# 1. Build the pinned evaluator image (Python 3.8 base + pytest + the runtime
+#    deps the official tests need) and resolve the official snapshots.
+#    requirements.lock installs pytest, future, decorator, six, fastapi,
+#    pydantic, starlette — all pinned.
 .venv\Scripts\python.exe -m patchproof.benchmark build-evaluator-image `
-  --base-image python@sha256:<verified-64-hex-digest> --output data/evaluator-image.lock.json --confirm-build
+  --base-image "python:3.8.20@sha256:<verified-64-hex-digest>" `
+  --tag patchproof-evaluator:0.3.8-fixes --output data/evaluator-image.lock.json --confirm-build
 .venv\Scripts\python.exe -m patchproof.benchmark resolve-public `
   --manifest benchmarks/public/bugs-in-py.v2.json `
   --image-lock data/evaluator-image.lock.json `
-  --output data/bugs-in-py.resolved.py38.lock.json --confirm-download
+  --output data/bugs-in-py.resolved.v3.lock.json --confirm-download
 
-# 2. The official tests/test_chinese.py needs the python_toolbox dependency,
-#    which the evaluator image does not install. Materialize the self-contained
-#    reconstructed contract (kept in-repo under benchmarks/public/pysnooper-1/)
-#    into the resolved snapshot before real evaluation:
-#    data/eval-cache/sources/<content-hash>/tests/test_chinese.py
-$src = Get-ChildItem data/eval-cache/sources -Directory | Where-Object {
-  Test-Path "$($_.FullName)\pysnooper\tracer.py" } | Select-Object -First 1
-Copy-Item benchmarks/public/pysnooper-1/test_chinese.py `
-  "$($src.FullName)\tests\test_chinese.py"
+# 2. The official test files depend on python_toolbox / other packages the
+#    evaluator image does not install, so the self-contained reconstructed
+#    contracts (kept in-repo under benchmarks/public/) are materialized into
+#    the resolved snapshots, and the cached run_test.sh for pysnooper bugs
+#    2 and 3 is pointed at them. fastapi-1's official check already targets
+#    the reconstructed test name.
+#    Snapshots:  pysnooper-1/2 -> data/eval-cache/sources/<e21a311-hash>
+#                pysnooper-3   -> data/eval-cache/sources/<6e3d797-hash>
+#                fastapi-1     -> data/eval-cache/sources/<766157b-hash>
+$s = Get-ChildItem data/eval-cache/sources -Directory
+Copy-Item benchmarks/public/pysnooper-2/test_custom_repr_single.py `
+  ($s | Where-Object { Test-Path "$($_.FullName)\pysnooper\tracer.py" } | Select-Object -First 1).FullName
+Copy-Item benchmarks/public/pysnooper-3/test_file_output.py `
+  ($s | Where-Object { Test-Path "$($_.FullName)\pysnooper\pysnooper.py" } | Select-Object -First 1).FullName
+Copy-Item benchmarks/public/fastapi-1/test_jsonable_encoder.py `
+  ($s | Where-Object { Test-Path "$($_.FullName)\fastapi" } | Select-Object -First 1).FullName
 
-# 3. Run the real baseline-vs-harness comparison on that single case.
+# 3. Run the real baseline-vs-harness comparison. Each case runs under a
+#    shared ledger; run hard cases individually with a fresh budget if needed.
 .venv\Scripts\python.exe -m patchproof.benchmark real `
-  --manifest data/bugs-in-py.resolved.py38.lock.json `
-  --project-root . --output data/benchmark-real-pysnooper.json `
+  --manifest data/bugs-in-py.resolved.v3.run.lock.json `
+  --project-root . --output data/benchmark-real-bugsinpy-v3.json `
   --confirm-real --confirm-public-code-egress --confirm-download `
-  --max-cases 1 --repeats 1 --max-requests 60 --max-tokens 400000 --max-cost-usd 2
+  --max-cases 4 --repeats 1 --max-requests 100 --max-tokens 600000 --max-cost-usd 4
 ```
 
-The reproduction materializes only the test contract; the library fix
-(`pysnooper/tracer.py`) is produced by the model. `data/eval-cache/` is
-gitignored, so step 2 must be repeated after a fresh clone.
+Reproduction materializes only the test contracts; the library fixes
+(`pysnooper/tracer.py`, `pysnooper/pysnooper.py`, `fastapi/encoders.py`) are
+produced by the model. `data/eval-cache/` is gitignored, so step 2 must be
+repeated after a fresh clone. Reported results: `pysnooper-1` and
+`pysnooper-3` are complete pairs; `fastapi-1` harness succeeds (baseline
+one-shot precondition fails); `pysnooper-2` is a documented failure. Budget
+hints: use `PATCHPROOF_LLM_REASONING=off` and, for large one-shot patches,
+`PATCHPROOF_MAX_TOKENS=16384` to avoid `provider_output_truncated`.

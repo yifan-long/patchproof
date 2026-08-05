@@ -1,1 +1,7 @@
 pytest==8.3.5
+future==0.18.3
+decorator==4.4.2
+six==1.15.0
+fastapi==0.53.2
+pydantic==1.8.2
+starlette==0.13.2

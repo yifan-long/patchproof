@@ -10,13 +10,13 @@ def test_evaluation_api_exposes_suites_cases_and_honest_preflight():
         assert "api_key_configured" in health.json()["provider"]
         suites = client.get("/suites")
         assert suites.status_code == 200
-        assert sum(item["cases"] for item in suites.json()["suites"]) == 10
+        assert sum(item["cases"] for item in suites.json()["suites"]) == 13
         cases = client.get("/cases")
         assert cases.status_code == 200
-        assert len(cases.json()) == 10
+        assert len(cases.json()) == 13
         preflight = client.get("/preflight")
         assert preflight.status_code == 200
-        assert len(preflight.json()["cases"]) == 10
+        assert len(preflight.json()["cases"]) == 13
         assert preflight.json()["cases"][-1]["provenance_state"] == "unresolved"
 
 
