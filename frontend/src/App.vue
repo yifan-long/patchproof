@@ -40,6 +40,30 @@
           最大 tool steps
           <input v-model.number="form.max_steps" type="number" min="1" max="200" />
         </label>
+        <details class="provider-settings">
+          <summary>LLM Provider（可选，自带 API key）</summary>
+          <label>
+            Base URL
+            <input v-model="form.provider.base_url" type="text" placeholder="https://opencode.ai/zen/go/v1 或自定义端点" />
+          </label>
+          <label>
+            Model
+            <input v-model="form.provider.model" type="text" placeholder="deepseek-v4-flash / gpt-4o / ..." />
+          </label>
+          <label>
+            API Key
+            <input v-model="form.provider.api_key" type="password" placeholder="仅本次任务使用，不落库" />
+          </label>
+          <label>
+            Transport
+            <select v-model="form.provider.transport">
+              <option value="auto">auto（按模型推断）</option>
+              <option value="openai-compatible">openai-compatible</option>
+              <option value="anthropic-compatible">anthropic-compatible</option>
+            </select>
+          </label>
+          <p class="hint">不填则使用服务器默认 Provider。密钥只在浏览器本地保存，随任务提交后仅存于内存。</p>
+        </details>
         <button class="primary" :disabled="busy || !form.goal.trim()" @click="createTask">
           {{ busy ? '任务运行中…' : '启动 Evidence Loop' }}
         </button>
@@ -230,7 +254,8 @@ const form = reactive({
   goal: '',
   check_command: 'python -m pytest -q',
   max_iterations: 3,
-  max_steps: 32
+  max_steps: 32,
+  provider: { base_url: '', model: '', api_key: '', transport: 'auto' }
 })
 const currentTask = ref(null)
 const history = ref([])
@@ -249,6 +274,10 @@ const receiptVerified = computed(() => receipt.value?.verified === true)
 
 onMounted(async () => {
   try {
+    const saved = localStorage.getItem('patchproof.provider')
+    if (saved) {
+      try { Object.assign(form.provider, JSON.parse(saved)) } catch { /* keep defaults */ }
+    }
     const response = await fetch('/api/health')
     const data = await response.json()
     healthData.value = data
@@ -290,11 +319,16 @@ async function createTask() {
   busy.value = true
   events.value = []
   receipt.value = null
+  localStorage.setItem('patchproof.provider', JSON.stringify(form.provider))
+  const payload = { ...form }
+  if (!payload.provider.base_url && !payload.provider.model && !payload.provider.api_key && payload.provider.transport === 'auto') {
+    delete payload.provider
+  }
   try {
     const response = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
+      body: JSON.stringify(payload)
     })
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}))

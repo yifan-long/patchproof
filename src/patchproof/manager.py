@@ -12,6 +12,7 @@ from .config import PATCHPROOF_ROOT, Settings
 from .models import (
     TERMINAL_STATUSES,
     ApprovalSnapshot,
+    ProviderOverride,
     ReceiptSnapshot,
     TaskEvent,
     TaskSnapshot,
@@ -71,6 +72,7 @@ class TaskRecord:
     required_check_last_result: dict[str, Any] | None = None
     precondition_failures: int = 0
     commands: list[dict[str, Any]] = field(default_factory=list)
+    provider: dict[str, Any] | None = None
     started_at: str | None = None
     task: asyncio.Task | None = None
     cancel_event: asyncio.Event = field(default_factory=asyncio.Event)
@@ -95,6 +97,18 @@ class TaskRecord:
             and self.required_check_evidence_generation is not None
             and self.required_check_evidence_generation == self.edit_generation
         )
+
+    def provider_view(self) -> dict[str, str | None] | None:
+        """Non-secret provider override for snapshots/logs: the api_key is
+        replaced by a marker and never leaves process memory."""
+        if not self.provider:
+            return None
+        return {
+            "base_url": self.provider.get("base_url"),
+            "model": self.provider.get("model"),
+            "transport": self.provider.get("transport"),
+            "api_key": "***configured***" if self.provider.get("api_key") else None,
+        }
 
     def snapshot(self, *, chain_head: str | None = None) -> TaskSnapshot:
         if self.receipt and self.receipt.artifact_path:
@@ -147,6 +161,7 @@ class TaskRecord:
             edit_generation=self.edit_generation,
             required_check_last_result=self.required_check_last_result,
             precondition_failures=self.precondition_failures,
+            provider=self.provider_view(),
         )
 
 
@@ -179,6 +194,7 @@ class TaskManager:
         check_command: str | None,
         max_iterations: int | None,
         max_steps: int | None = None,
+        provider: ProviderOverride | None = None,
     ) -> TaskRecord:
         path = self._validate_repo(repo_path)
         task_id = uuid.uuid4().hex[:12]
@@ -187,6 +203,7 @@ class TaskManager:
             required_check_argv = normalize_command(normalized_check_command)
         except ValueError as exc:
             raise ValueError(f"check_command 无法解析: {exc}") from exc
+        provider_data = provider.model_dump(exclude_none=True) if provider else None
         record = TaskRecord(
             id=task_id,
             goal=goal,
@@ -195,6 +212,7 @@ class TaskManager:
             max_iterations=max_iterations or self.settings.max_iterations,
             max_steps=max_steps or self.settings.max_tool_steps,
             required_check_argv=required_check_argv,
+            provider=provider_data,
         )
         record.approval_requester = self._create_approval
         self.store.create_task(
@@ -205,6 +223,7 @@ class TaskManager:
             max_iterations=record.max_iterations,
             max_steps=record.max_steps,
             required_check_argv=record.required_check_argv,
+            provider=record.provider_view(),
         )
         async with self._lock:
             self.records[task_id] = record
@@ -324,6 +343,7 @@ class TaskManager:
             edit_generation=int(row["edit_generation"] or 0),
             required_check_last_result=json_loads(row["required_check_last_result_json"], None),
             precondition_failures=int(row["precondition_failures"] or 0),
+            provider=json_loads(row["provider_json"], None) if "provider_json" in row.keys() else None,
         )
         record.approval_requester = self._create_approval
         return record

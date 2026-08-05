@@ -39,6 +39,7 @@ async def create_task(request: Request, body: TaskCreate):
             body.check_command,
             body.max_iterations,
             body.max_steps,
+            body.provider,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

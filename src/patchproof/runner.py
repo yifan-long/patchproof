@@ -54,6 +54,7 @@ class AgentRunner:
         record.started_at = record.started_at or datetime.now(UTC).isoformat()
         observations: list[dict[str, Any]] = []
         last_test_passed = False
+        llm = self._llm_for(record)
         try:
             await emit("inspecting", "正在选择并创建隔离工作区", {})
             workspace = select_workspace(
@@ -81,14 +82,14 @@ class AgentRunner:
             )
             await emit("inspecting", "仓库索引完成", {"index": index.summary(), "mode": workspace.kind})
 
-            await emit("planning", "正在生成显式任务计划", {"model": self._model_metadata()})
-            self._ensure_llm_budget(record)
-            record.plan = await self.llm.plan(record.goal, index_context, source_context, record.check_command)
-            record.usage = dict(getattr(self.llm, "usage", {}) or {})
+            await emit("planning", "正在生成显式任务计划", {"model": self._model_metadata(llm)})
+            self._ensure_llm_budget(record, llm)
+            record.plan = await llm.plan(record.goal, index_context, source_context, record.check_command)
+            record.usage = dict(getattr(llm, "usage", {}) or {})
             await emit(
                 "planning",
                 "任务计划已生成",
-                {"plan": record.plan, "model": self._model_metadata(), "usage": record.usage},
+                {"plan": record.plan, "model": self._model_metadata(llm), "usage": record.usage},
             )
 
             context = f"{index_context}\n\n{source_context}"
@@ -96,10 +97,10 @@ class AgentRunner:
                 if record.cancel_event.is_set():
                     raise asyncio.CancelledError
                 record.budget_used = step
-                self._ensure_llm_budget(record)
+                self._ensure_llm_budget(record, llm)
                 await emit("editing", f"Tool loop 第 {step}/{record.max_steps} 步", {"step": step})
-                raw_action = await self.llm.next_action(record.goal, record.plan or {}, context, observations, step)
-                record.usage = dict(getattr(self.llm, "usage", {}) or {})
+                raw_action = await llm.next_action(record.goal, record.plan or {}, context, observations, step)
+                record.usage = dict(getattr(llm, "usage", {}) or {})
                 try:
                     action = parse_tool_action(raw_action)
                 except InvalidToolAction as exc:
@@ -134,7 +135,7 @@ class AgentRunner:
                 await emit(
                     "tool_call",
                     f"调用 typed tool: {action.tool}",
-                    {"step": step, "action": action_data, "model": self._model_metadata(), "usage": record.usage},
+                    {"step": step, "action": action_data, "model": self._model_metadata(llm), "usage": record.usage},
                 )
                 result, last_test_passed = await self._dispatch(
                     record,
@@ -146,9 +147,9 @@ class AgentRunner:
                 observations.append(result)
                 await emit("observation", f"收到 {action.tool} observation", result)
                 record.diff, record.changed_files = workspace.diff()
-                self._persist_artifact_stats(record, workspace)
+                self._persist_artifact_stats(record, workspace, llm)
                 if isinstance(action, FinishAction) and result.get("ok"):
-                    await self._create_receipt(record, workspace, record.required_check_evidence_valid)
+                    await self._create_receipt(record, workspace, record.required_check_evidence_valid, llm=llm)
                     await emit(
                         TaskStatus.AWAITING_APPLY.value,
                         "测试证据满足要求，已生成 Patch Receipt，等待人工 Apply",
@@ -363,16 +364,23 @@ class AgentRunner:
             await emit("repairing", "验证失败，失败 observation 将驱动下一轮修复", {"iteration": record.iteration})
         return result_data
 
-    async def _create_receipt(self, record: Any, workspace: WorkspaceProtocol, test_passed: bool) -> None:
+    async def _create_receipt(
+        self,
+        record: Any,
+        workspace: WorkspaceProtocol,
+        test_passed: bool,
+        *,
+        llm: AgentModel | None = None,
+    ) -> None:
         diff, changed = workspace.diff()
         record.diff = diff
         record.changed_files = changed
-        record.usage = dict(getattr(self.llm, "usage", {}) or {})
+        record.usage = dict(getattr(llm or self.llm, "usage", {}) or {})
         receipt = build_patch_receipt(
             task_id=record.id,
             goal=record.goal,
             workspace=workspace.metadata,
-            model=self._model_metadata(),
+            model=self._model_metadata(llm),
             plan=record.plan,
             tool_stats={
                 "tool_calls": record.tool_calls,
@@ -415,17 +423,40 @@ class AgentRunner:
         record.receipt = self.store.save_receipt(record.id, receipt)
         record.receipt.verified = verify_receipt(receipt, record.receipt.receipt_hash) and record.receipt.file_verified
 
-    def _persist_artifact_stats(self, record: Any, workspace: WorkspaceProtocol) -> None:
+    def _persist_artifact_stats(self, record: Any, workspace: WorkspaceProtocol, llm: AgentModel | None = None) -> None:
         record.diff, record.changed_files = workspace.diff()
-        record.usage = dict(getattr(self.llm, "usage", {}) or {})
+        record.usage = dict(getattr(llm or self.llm, "usage", {}) or {})
 
-    def _model_metadata(self) -> dict[str, Any]:
-        return dict(getattr(self.llm, "metadata", {}) or {})
+    def _model_metadata(self, llm: AgentModel | None = None) -> dict[str, Any]:
+        return dict(getattr(llm or self.llm, "metadata", {}) or {})
 
-    def _ensure_llm_budget(self, record: Any) -> None:
-        usage = getattr(self.llm, "usage", {}) or {}
+    def _ensure_llm_budget(self, record: Any, llm: AgentModel | None = None) -> None:
+        usage = getattr(llm or self.llm, "usage", {}) or {}
         if int(usage.get("requests", 0)) >= self.settings.max_llm_calls:
             raise AgentFailure("llm_budget_exhausted", "达到模型调用预算，停止执行")
+
+    def _llm_for(self, record: Any) -> AgentModel:
+        """Build a per-run LLM client from the task's provider override.
+
+        A shared deployment lets each user supply their own API key; the key
+        lives only on the in-memory TaskRecord and is never persisted. Using a
+        fresh client per run (instead of mutating the shared ``self.llm``)
+        avoids races between concurrently running tasks.
+        """
+        provider = getattr(record, "provider", None)
+        if not provider:
+            return self.llm
+        kwargs: dict[str, Any] = {}
+        if provider.get("base_url"):
+            kwargs["anthropic_base_url"] = provider["base_url"]
+        if provider.get("model"):
+            kwargs["anthropic_model"] = provider["model"]
+        if provider.get("api_key"):
+            kwargs["anthropic_api_key"] = provider["api_key"]
+        transport = provider.get("transport")
+        if transport and transport != "auto":
+            kwargs["llm_transport"] = transport
+        return LLMClient(Settings(**kwargs))
 
 
 class AgentFailureError(RuntimeError):

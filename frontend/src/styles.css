@@ -83,6 +83,11 @@ code { overflow-x: auto; color: #68352b; font: 12px ui-monospace, SFMono-Regular
 .suite-row .warning { color: #be6545; }
 .taxonomy { display: flex; flex-wrap: wrap; gap: 8px; }
 .taxonomy span { border: 1px solid #e1dbcf; border-radius: 999px; color: #77746c; padding: 7px 10px; font-size: 12px; }
+select { width: 100%; padding: 12px 13px; border: 1px solid #ded8cd; border-radius: 10px; outline: none; color: #282a32; background: #fffefa; font: inherit; }
+select:focus { border-color: #be6545; box-shadow: 0 0 0 3px rgba(190, 101, 69, .12); }
+.provider-settings { margin: 0 0 18px; border: 1px solid #e1dbcf; border-radius: 12px; padding: 12px 14px; background: rgba(255,255,255,.4); }
+.provider-settings summary { cursor: pointer; color: #6355a6; font: 700 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.provider-settings[open] summary { margin-bottom: 12px; }
 @media (max-width: 1100px) { .receipt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 900px) { .shell { padding: 24px 16px 42px; } .topbar { align-items: flex-start; flex-direction: column; } .layout { grid-template-columns: 1fr; } .result-card { grid-column: auto; } }
 @media (max-width: 700px) { .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .readiness-grid { grid-template-columns: 1fr; } }

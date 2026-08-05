@@ -47,12 +47,40 @@ RUNNING_STATUSES = {
 }
 
 
+class ProviderOverride(BaseModel):
+    """Per-task LLM provider override so a shared deployment can let each user
+    bring their own API key.
+
+    ``api_key`` is only ever held in memory on the TaskRecord; it is never
+    persisted to SQLite, serialized to logs, or included in snapshots.
+    """
+
+    base_url: str | None = Field(default=None, max_length=500)
+    model: str | None = Field(default=None, max_length=200)
+    api_key: str | None = Field(default=None, max_length=500)
+    transport: Literal["auto", "anthropic-compatible", "openai-compatible"] | None = Field(
+        default=None,
+        description="Explicit transport. Required for custom OpenAI-compatible endpoints "
+        "whose model name does not imply the transport.",
+    )
+
+    def masked(self) -> dict[str, str | None]:
+        """Non-secret view: key is replaced by a fixed marker."""
+        return {
+            "base_url": self.base_url,
+            "model": self.model,
+            "transport": self.transport,
+            "api_key": "***configured***" if self.api_key else None,
+        }
+
+
 class TaskCreate(BaseModel):
     goal: str = Field(min_length=8, max_length=2000)
     repo_path: str | None = None
     check_command: str | None = Field(default=None, max_length=500)
     max_iterations: int | None = Field(default=None, ge=1, le=20)
     max_steps: int | None = Field(default=None, ge=1, le=200)
+    provider: ProviderOverride | None = None
 
 
 class ApprovalRequest(BaseModel):
@@ -137,6 +165,10 @@ class TaskSnapshot(BaseModel):
     edit_generation: int = 0
     required_check_last_result: dict[str, Any] | None = None
     precondition_failures: int = 0
+    provider: dict[str, str | None] | None = Field(
+        default=None,
+        description="Masked per-task provider override; api_key is never included.",
+    )
 
 
 class StrictModel(BaseModel):

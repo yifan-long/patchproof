@@ -206,6 +206,7 @@ class SQLiteStore:
             "edit_generation": "INTEGER NOT NULL DEFAULT 0",
             "required_check_last_result_json": "TEXT",
             "precondition_failures": "INTEGER NOT NULL DEFAULT 0",
+            "provider_json": "TEXT",
         }
         for name, definition in migrations.items():
             if name not in existing:
@@ -227,6 +228,7 @@ class SQLiteStore:
         max_steps: int,
         required_check_argv: list[str] | None = None,
         status: TaskStatus = TaskStatus.QUEUED,
+        provider: dict[str, Any] | None = None,
     ) -> None:
         now = utc_iso()
         with self.connection() as connection:
@@ -234,8 +236,9 @@ class SQLiteStore:
                 """
                 INSERT INTO tasks
                 (id, goal, repo_path, status, current_stage, iteration, max_iterations,
-                 max_steps, check_command, created_at, updated_at, required_check_argv_json)
-                VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)
+                 max_steps, check_command, created_at, updated_at, required_check_argv_json,
+                 provider_json)
+                VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     task_id,
@@ -249,6 +252,7 @@ class SQLiteStore:
                     now,
                     now,
                     json_dumps(required_check_argv or []),
+                    json_dumps(provider) if provider else None,
                 ),
             )
 

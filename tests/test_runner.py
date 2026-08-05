@@ -11,6 +11,37 @@ from patchproof.runner import AgentRunner
 from patchproof.storage import SQLiteStore
 
 
+def test_runner_llm_for_honors_provider_override_and_falls_back(tmp_path: Path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    settings = Settings(
+        repo_path=str(repo),
+        database_path=str(tmp_path / "patchproof.db"),
+        env_file_path=str(tmp_path / "no-provider.env"),
+        allow_project_target=True,
+    )
+    runner = AgentRunner(settings, store=SQLiteStore(tmp_path / "patchproof.db"))
+
+    class _Record:
+        provider = {
+            "base_url": "https://example.test/v1",
+            "model": "custom-model",
+            "api_key": "sk-in-memory",
+            "transport": "openai-compatible",
+        }
+
+    llm = runner._llm_for(_Record())
+    assert llm.settings.anthropic_base_url == "https://example.test/v1"
+    assert llm.settings.anthropic_model == "custom-model"
+    assert llm.settings.anthropic_api_key == "sk-in-memory"
+    assert llm.transport == "openai-compatible"
+
+    class _RecordNone:
+        provider = None
+
+    assert runner._llm_for(_RecordNone()) is runner.llm
+
+
 def _manager(tmp_path: Path, actions: list[dict], *, max_steps: int = 10, max_invalid: int = 3):
     repo = tmp_path / "repo"
     repo.mkdir()
