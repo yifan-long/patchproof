@@ -12,7 +12,7 @@
 [![project python](https://img.shields.io/badge/project%20Python-%E2%89%A53.12-0f766e)](pyproject.toml)
 [![evaluator](https://img.shields.io/badge/BugsInPy%20evaluator-3.8.20-334155)](docker/evaluator/Dockerfile)
 
-[Windows 双击演示](#windows-本地一键演示) · [Linux 自托管](#linux-一键自托管) · [实测证据](#实测证据) · [架构与安全](#架构与安全) · [完整文档](#文档导航)
+[项目说明](#第一章) · [Windows 双击演示](#windows-本地一键演示) · [Linux 自托管](#linux-一键自托管) · [实测证据](#实测证据) · [架构与安全](#架构与安全) · [完整文档](#文档导航)
 
 </div>
 
@@ -22,7 +22,33 @@ PatchProof 把 Agent 放进隔离工作区，只开放 6 个类型化工具；�
 |---:|---:|---:|---|
 | 3 个 BugsInPy case | 3 / 3 | **0 次** | diff + required-check + receipt + event chain |
 
-> 这些数字描述的是当前仓库内可追溯的评测结果，不是通用模型能力声明。一个更复杂的公开样本 `pysnooper-2` 在预算内失败，结果被保留而非重跑美化。
+> 这些数字描述的是当前仓库内可追溯的评测结果，不是通用模型能力声明。一个更复杂的公开样本 `pysnooper-2` 在预算内未完成修复。
+
+## 第一章
+
+### PatchProof 是做什么的
+
+PatchProof 是一个给 AI 编码 Agent 加上“验收层”的工程工具。它不负责训练模型，也不是另一个代码补全 IDE；它负责把模型提出的修改，变成一份**可以复核、可以追踪、可以由人决定是否写回**的工程结果。
+
+普通 AI 编码工具通常把“模型说已经修好了”当作任务终点。PatchProof 把终点拆成四个可检查的问题：
+
+1. **它改的是不是一个隔离副本？** 模型不能直接碰你的源仓库。
+2. **它到底做了什么？** 搜索、读取、编辑、检查和审批都进入事件链。
+3. **它真的修好了吗？** 必须在最近一次编辑之后，按任务指定的原始命令完成验证。
+4. **你是否同意写回？** 系统生成 diff 和 Patch Receipt，只有人工 review 后才允许 Apply。
+
+输入是一份目标仓库、一个要解决的问题和一条验收命令；输出不是一段模型解释，而是一组可以继续审阅的工程证据：
+
+| 输入 | PatchProof 处理 | 输出 |
+|---|---|---|
+| 损坏的仓库 / 任务目标 | 建立 detached worktree 或 snapshot | 隔离副本中的修改 |
+| `check_command` | 在最近一次编辑后按原 argv 执行 | required-check 结果与退出码 |
+| 模型动作与审批 | 写入 SHA-256 链式事件记录 | 可追踪的过程日志 |
+| 文件 diff 与哈希 | 生成并校验 Patch Receipt | 人工 review 后 Apply 或 Reject |
+
+它适合三类场景：个人开发者想让 Agent 改代码但不想交出源仓库控制权；团队需要在合并前审查 Agent 的修改证据；研究者需要用一致的门禁、预算和隔离环境比较 Agent 的修复能力。模型可以失败、超时或无法运行，但系统不会把“没有完成”伪装成“完成”。
+
+一句话概括：**PatchProof 不是让 AI 更会写代码，而是让 AI 写完代码之后，结果有凭有据。**
 
 ## Windows 本地一键演示
 
@@ -147,17 +173,6 @@ Vue Evidence Console ── FastAPI / SSE ── TaskManager ── durable stat
 - **本地执行器不是沙箱**：`local_smoke_only` 仍继承操作系统用户权限；公开/真实评测缺少 Docker 前置条件时必须阻断。
 
 模块职责、状态转换与 threat model 分别见 [架构文档](docs/ARCHITECTURE.md) 和 [威胁模型](docs/THREAT_MODEL.md)。
-
-## 诚实边界
-
-- 官方结果只覆盖 3 个进入计分的真实案例，涉及 PySnooper 与 FastAPI；不能外推到大型、多语言或长期任务。
-- `pysnooper-2` 是保留的预算内失败样本；失败不重跑、不从报告中抹除。
-- 自持 mini fixture 含意图说明，只适合基础设施冒烟，不是难度 benchmark。
-- 尚未与 OpenHands、Aider、SWE-agent 做同案例对照。
-- 上下文来自确定性静态索引，尚无 LSP / 语义导航。
-- 公开语料还受上游源码、固定运行时、Docker daemon 与本地 cache 的可复现性约束。
-
-真实评测打通时还发现并修复了 **6 个**单元测试未覆盖的基础设施问题：Docker mount 参数兼容、默认推理挤占输出预算、绝对路径目录排除、CRLF/LF 精确编辑、时间戳导致初始检查不确定，以及 one-shot 聚焦上下文漏掉仅以符号名出现的文件。具体证据与失败分类见 [评测指南](docs/EVALUATION.md) 和测试目录。
 
 ## 文档导航
 
