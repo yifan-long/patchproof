@@ -248,6 +248,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { loadStoredProvider, saveStoredProvider } from './providerStorage.js'
 
 const form = reactive({
   repo_path: 'benchmarks/fixtures/validation',
@@ -274,10 +275,8 @@ const receiptVerified = computed(() => receipt.value?.verified === true)
 
 onMounted(async () => {
   try {
-    const saved = localStorage.getItem('patchproof.provider')
-    if (saved) {
-      try { Object.assign(form.provider, JSON.parse(saved)) } catch { /* keep defaults */ }
-    }
+    const saved = loadStoredProvider(localStorage)
+    if (saved) Object.assign(form.provider, saved, { api_key: '' })
     const response = await fetch('/api/health')
     const data = await response.json()
     healthData.value = data
@@ -319,7 +318,7 @@ async function createTask() {
   busy.value = true
   events.value = []
   receipt.value = null
-  localStorage.setItem('patchproof.provider', JSON.stringify(form.provider))
+  saveStoredProvider(localStorage, form.provider)
   const payload = { ...form }
   if (!payload.provider.base_url && !payload.provider.model && !payload.provider.api_key && payload.provider.transport === 'auto') {
     delete payload.provider

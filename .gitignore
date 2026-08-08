@@ -23,5 +23,7 @@ data/*.log
 frontend/node_modules/
 frontend/dist/
 deploy/.env
+deploy/.local-demo.config.json
+deploy/.local-demo/
 deploy/data/
 deploy/repositories/
