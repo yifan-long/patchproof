@@ -242,6 +242,29 @@ pnpm run dev
 
 ---
 
+## 一键自托管部署
+
+Linux 服务器已安装 Docker Engine + Compose v2，且域名已解析到服务器时，在仓库
+根目录运行一行命令：
+
+```bash
+bash deploy/deploy.sh patchproof.example.com
+```
+
+Caddy 会自动配置 HTTPS；域名同时驱动后端 CORS，无需手改配置。暂时没有域名可用
+`bash deploy/deploy.sh --localhost` 启动仅限本机的 HTTP 冒烟模式。常用运维命令为
+`bash deploy/deploy.sh status`、`upgrade`、`logs` 和 `uninstall`，完整说明见
+[部署文档](docs/DEPLOYMENT.md)。
+
+持久数据位于 `deploy/data/`，放入 `deploy/repositories/<name>` 的任务仓库在应用内
+使用路径 `/repositories/<name>`。脚本不处理 LLM key，用户继续在浏览器中自带 key。
+
+> 评测边界：默认 Compose 不挂载宿主机 Docker socket。Docker 只承载本应用，
+> 不等于 Web 后端具备 Docker 评测能力；`benchmark real` / 公开评测会诚实地保持
+> blocked，而不会退回本地执行器冒充隔离评测。
+
+---
+
 ## Benchmark 用法
 
 确定性 smoke suite（不调用模型，验证管道）：
@@ -314,6 +337,7 @@ Provider 配置只读自 `archive/researchflow/.env`（DEEPSEEK_* / ANTHROPIC_*�
 
 | 状态 | 功能 | 说明 |
 |---|---|---|
+| ✅ 已实现 | **一键自托管部署** | 单命令 Docker Compose + Caddy；域名自动 HTTPS，支持 localhost smoke、健康检查和幂等运维 |
 | ✅ 已实现 | **自带 API key（per-user provider）** | 前端填 base_url / model / api_key，随任务走；后端按请求构建独立 `LLMClient`，key 只存内存、不落库不进日志，`deploy/` 构件已随仓库提供 |
 | 📌 规划中 | **远端 git 仓库支持（任务路径）** | `repo_path` 接受 `https://github.com/...` 时自动 clone 到工作区再快照；只允许 HTTPS，与评测路径 `confirm_download` 门禁对齐（方式 B） |
 | 📌 规划中 | **简单用户体系 / 鉴权** | 反向代理层 Basic Auth 起步，后续可加登录；配合自带 key 支持多用户共享部署 |

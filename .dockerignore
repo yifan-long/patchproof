@@ -17,6 +17,8 @@ frontend/dist/
 
 # Data (secrets, DB, eval cache, runs, archives)
 data/
+deploy/data/
+deploy/repositories/
 archive/
 *.db
 

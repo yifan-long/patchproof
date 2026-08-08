@@ -22,3 +22,6 @@ data/reports/
 data/*.log
 frontend/node_modules/
 frontend/dist/
+deploy/.env
+deploy/data/
+deploy/repositories/

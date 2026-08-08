@@ -1,11 +1,14 @@
-# 把 YOUR_DOMAIN 换成你的域名（无域名先用 duckdns 免费动态域名）
-YOUR_DOMAIN {
+{$PATCHPROOF_SITE_ADDRESS} {
     root * /srv/www
-    file_server
-    encode gzip
+    encode zstd gzip
 
     handle /api/* {
         uri strip_prefix /api
         reverse_proxy backend:8010
+    }
+
+    handle {
+        try_files {path} /index.html
+        file_server
     }
 }

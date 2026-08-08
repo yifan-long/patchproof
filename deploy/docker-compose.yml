@@ -1,4 +1,5 @@
-# PatchProof 方案 A 部署：backend + frontend build + Caddy HTTPS
+name: patchproof
+
 services:
   frontend-build:
     build:
@@ -6,38 +7,61 @@ services:
       dockerfile: deploy/frontend.Dockerfile
     volumes:
       - webroot:/out
-    command: sh -c "cp -r dist/* /out/"
+    command: sh -c "rm -rf /out/* && cp -r dist/. /out/"
     restart: "no"
 
   backend:
     build:
       context: ..
       dockerfile: deploy/backend.Dockerfile
-    ports:
-      - "127.0.0.1:8010:8010"
     volumes:
-      - ./data:/app/data
+      - ./data:/workspace/patchproof/data
+      - ./repositories:/repositories
     environment:
-      PATCHPROOF_DATABASE_PATH: /app/data/patchproof.db
-      PATCHPROOF_CORS_ORIGINS: "https://YOUR_DOMAIN"
-      # 不设任何全局 LLM key —— 用户在前端自带（见 README 待实现 / docs/DEPLOYMENT.md）
+      PATCHPROOF_DATABASE_PATH: /workspace/patchproof/data/patchproof.db
+      PATCHPROOF_REPO_PATH: /workspace/patchproof/benchmarks/fixtures/validation
+      PATCHPROOF_CORS_ORIGINS: "${PATCHPROOF_ORIGIN:?Run deploy/deploy.sh first}"
+      # Do not set a global LLM key. Each browser session supplies its own key.
     depends_on:
-      - frontend-build
+      frontend-build:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8010/health', timeout=2).read()"
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
     restart: unless-stopped
 
   caddy:
     image: caddy:2
     ports:
-      - "80:80"
-      - "443:443"
+      - "${PATCHPROOF_HTTP_BIND:?Run deploy/deploy.sh first}"
+      - "${PATCHPROOF_HTTPS_BIND:?Run deploy/deploy.sh first}"
+      - "${PATCHPROOF_HTTPS_UDP_BIND:?Run deploy/deploy.sh first}"
+    environment:
+      PATCHPROOF_SITE_ADDRESS: "${PATCHPROOF_SITE_ADDRESS:?Run deploy/deploy.sh first}"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
+      - caddy_config:/config
       - webroot:/srv/www:ro
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
 volumes:
   webroot:
   caddy_data:
+  caddy_config:
