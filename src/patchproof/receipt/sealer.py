@@ -1,8 +1,24 @@
-"""Patch Receipt: a content-addressed, verifiable completion claim."""
+"""Patch Receipt —— 内容寻址、可自校验的"完成证据"。
+
+做什么
+------
+把任务的关键事实（计划摘要、工具统计、文件前后哈希、diff 哈希、命令、审批、测试证据、
+事件链头）密封成一份不可抵赖的 Receipt：任何字段被改，逻辑哈希或文件字节哈希都会对不上。
+
+怎么实现
+--------
+- seal_receipt：先剔除 self-reference 字段再算 ``receipt_hash``，再补 ``artifact_sha256``。
+- write_receipt_atomic：临时文件 + ``os.replace`` + fsync，原子落盘。
+- verify_receipt / verify_receipt_file：分别校验"逻辑哈希"与"文件字节+规范序列化"。
+
+为什么
+------
+- 哈希不能包含自己：若 receipt_hash 参与自身输入会变成不动点，无法验证，所以先从 payload 剔除。
+- 文件字节哈希单独存 SQLite：API 能区分"Receipt 逻辑完好"与"文件被改过/丢了"两个不同的失败。
+"""
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import tempfile
@@ -10,9 +26,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-
-def canonical_json(value: Any) -> str:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+from ..config import PATCHPROOF_ROOT
+from ..evidence.canonical import canonical_json, hash_bytes, hash_json
 
 
 def receipt_payload(receipt: dict[str, Any]) -> dict[str, Any]:
@@ -26,11 +41,13 @@ def receipt_payload(receipt: dict[str, Any]) -> dict[str, Any]:
 
 
 def compute_receipt_hash(receipt: dict[str, Any]) -> str:
-    return hashlib.sha256(canonical_json(receipt_payload(receipt)).encode("utf-8")).hexdigest()
+    return hash_json(receipt_payload(receipt))
 
 
 def seal_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
     sealed = dict(receipt)
+    # 计算前先剔除自指字段：artifact_sha256 是对"没有它自己"的密封结果的离体自校验。
+    # 若让它参与自身输入，就变成求不动点，永远无法验证。
     sealed.pop("artifact_sha256", None)
     sealed["receipt_hash"] = compute_receipt_hash(sealed)
     sealed["artifact_sha256"] = _artifact_material_hash(sealed)
@@ -52,11 +69,11 @@ def verify_receipt(receipt: dict[str, Any], expected_hash: str | None = None) ->
 def _artifact_material_hash(receipt: dict[str, Any]) -> str:
     material = dict(receipt)
     material.pop("artifact_sha256", None)
-    return hashlib.sha256(canonical_json(material).encode("utf-8")).hexdigest()
+    return hash_json(material)
 
 
 def receipt_path(task_id: str, root: str | Path | None = None) -> Path:
-    base = Path(root) if root is not None else Path(__file__).resolve().parents[2]
+    base = Path(root) if root is not None else PATCHPROOF_ROOT
     return base / "data" / "runs" / task_id / "receipt.json"
 
 
@@ -96,7 +113,7 @@ def write_receipt_atomic(
         except OSError:
             pass
         raise
-    return target, hashlib.sha256(payload).hexdigest()
+    return target, hash_bytes(payload)
 
 
 def verify_receipt_file(path: str | Path, expected_file_hash: str | None = None) -> bool:
@@ -110,7 +127,7 @@ def verify_receipt_file(path: str | Path, expected_file_hash: str | None = None)
             return False
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return False
-    if expected_file_hash is not None and hashlib.sha256(raw).hexdigest() != expected_file_hash:
+    if expected_file_hash is not None and hash_bytes(raw) != expected_file_hash:
         return False
     return verify_receipt(parsed)
 

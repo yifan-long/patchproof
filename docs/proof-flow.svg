@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="500" viewBox="0 0 1200 500" role="img" aria-labelledby="title desc">
-  <title id="title">PatchProof evidence flow</title>
-  <desc id="desc">The untrusted model acts only through typed tools in an isolated workspace. An exact required check and a sealed receipt lead to human review before Apply.</desc>
+  <title id="title">PatchProof 证据流</title>
+  <desc id="desc">不受信任的模型只能在隔离工作区中通过类型化工具行动。精确的必查命令与密封的验收单，在 Apply 之前引导人工审阅。</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0b1016"/>
@@ -17,61 +17,61 @@
   <rect width="1200" height="500" rx="14" fill="url(#bg)"/>
   <rect width="1200" height="500" rx="14" fill="url(#dots)"/>
 
-  <g font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
-    <text x="48" y="52" fill="#dfe5eb" font-size="18" font-weight="700">Evidence flow</text>
-    <text x="1152" y="52" text-anchor="end" fill="#697684" font-size="12" letter-spacing="1.5">TRUST BOUNDARIES / v0.3.7</text>
+  <g font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+    <text x="48" y="52" fill="#dfe5eb" font-size="18" font-weight="700">证据流</text>
+    <text x="1152" y="52" text-anchor="end" fill="#697684" font-size="12" letter-spacing="1.5">信任边界 / v0.3.7</text>
 
     <rect x="40" y="82" width="204" height="320" rx="9" fill="#121820" stroke="#735f45" stroke-dasharray="5 5"/>
-    <text x="60" y="112" fill="#b59b78" font-size="11" font-weight="700" letter-spacing="1.4">UNTRUSTED</text>
-    <text x="60" y="154" fill="#f1f4f7" font-size="22" font-weight="700">Model</text>
-    <text x="60" y="182" fill="#8894a1" font-size="13">proposes actions</text>
+    <text x="60" y="112" fill="#b59b78" font-size="11" font-weight="700" letter-spacing="1.4">不受信任</text>
+    <text x="60" y="154" fill="#f1f4f7" font-size="22" font-weight="700">模型</text>
+    <text x="60" y="182" fill="#8894a1" font-size="13">提议动作</text>
     <path d="M60 218H224" stroke="#2b333c"/>
-    <text x="60" y="252" fill="#b9c2cb" font-size="13">No arbitrary shell</text>
-    <text x="60" y="280" fill="#b9c2cb" font-size="13">No direct source writes</text>
-    <text x="60" y="308" fill="#b9c2cb" font-size="13">No completion by claim</text>
+    <text x="60" y="252" fill="#b9c2cb" font-size="13">无任意 shell</text>
+    <text x="60" y="280" fill="#b9c2cb" font-size="13">不能直接写源仓库</text>
+    <text x="60" y="308" fill="#b9c2cb" font-size="13">不能自述即完成</text>
     <rect x="60" y="343" width="139" height="34" rx="17" fill="#211d18" stroke="#66563f"/>
-    <text x="129.5" y="365" text-anchor="middle" fill="#c7ad88" font-size="11" font-weight="700">6 TYPED TOOLS</text>
+    <text x="129.5" y="365" text-anchor="middle" fill="#c7ad88" font-size="11" font-weight="700">6 个类型化工具</text>
 
     <rect x="296" y="82" width="604" height="320" rx="9" fill="#0d141b" stroke="#33424f"/>
-    <text x="316" y="112" fill="#63d5ca" font-size="11" font-weight="700" letter-spacing="1.4">EVIDENCE CORE</text>
+    <text x="316" y="112" fill="#63d5ca" font-size="11" font-weight="700" letter-spacing="1.4">证据核心</text>
 
     <g>
       <rect x="322" y="151" width="154" height="108" rx="7" fill="#131c25" stroke="#334452"/>
-      <text x="342" y="183" fill="#687888" font-size="11" font-weight="700" letter-spacing="1">01 / ISOLATE</text>
-      <text x="342" y="216" fill="#e7ebef" font-size="16" font-weight="650">Staging copy</text>
-      <text x="342" y="239" fill="#84919e" font-size="12">worktree or snapshot</text>
+      <text x="342" y="183" fill="#687888" font-size="11" font-weight="700" letter-spacing="1">01 / 隔离</text>
+      <text x="342" y="216" fill="#e7ebef" font-size="16" font-weight="650">Staging 副本</text>
+      <text x="342" y="239" fill="#84919e" font-size="12">worktree 或 snapshot</text>
 
       <rect x="520" y="151" width="154" height="108" rx="7" fill="#131c25" stroke="#334452"/>
-      <text x="540" y="183" fill="#687888" font-size="11" font-weight="700" letter-spacing="1">02 / RECORD</text>
-      <text x="540" y="216" fill="#e7ebef" font-size="16" font-weight="650">Event chain</text>
-      <text x="540" y="239" fill="#84919e" font-size="12">SHA-256 linked log</text>
+      <text x="540" y="183" fill="#687888" font-size="11" font-weight="700" letter-spacing="1">02 / 记录</text>
+      <text x="540" y="216" fill="#e7ebef" font-size="16" font-weight="650">事件链</text>
+      <text x="540" y="239" fill="#84919e" font-size="12">SHA-256 链式日志</text>
 
       <rect x="718" y="151" width="154" height="108" rx="7" fill="#13201f" stroke="#39716d"/>
-      <text x="738" y="183" fill="#63a7a1" font-size="11" font-weight="700" letter-spacing="1">03 / PROVE</text>
-      <text x="738" y="216" fill="#e7ebef" font-size="16" font-weight="650">Exact check</text>
-      <text x="738" y="239" fill="#78aaa6" font-size="12">latest edit · exit 0</text>
+      <text x="738" y="183" fill="#63a7a1" font-size="11" font-weight="700" letter-spacing="1">03 / 证明</text>
+      <text x="738" y="216" fill="#e7ebef" font-size="16" font-weight="650">精确验收</text>
+      <text x="738" y="239" fill="#78aaa6" font-size="12">最新编辑 · 退出码 0</text>
     </g>
 
     <line x1="476" y1="205" x2="510" y2="205" stroke="#647483" marker-end="url(#arrow)"/>
     <line x1="674" y1="205" x2="708" y2="205" stroke="#647483" marker-end="url(#arrow)"/>
 
     <rect x="322" y="297" width="550" height="73" rx="7" fill="#101921" stroke="#2d3c48"/>
-    <text x="342" y="326" fill="#687888" font-size="11" font-weight="700" letter-spacing="1">SEALED OUTPUT</text>
-    <text x="342" y="352" fill="#dce2e7" font-size="14">diff hash · file hashes · check result · approvals · receipt hash</text>
+    <text x="342" y="326" fill="#687888" font-size="11" font-weight="700" letter-spacing="1">密封输出</text>
+    <text x="342" y="352" fill="#dce2e7" font-size="14">diff 哈希 · 文件哈希 · 检查结果 · 审批 · receipt 哈希</text>
 
     <rect x="952" y="82" width="208" height="320" rx="9" fill="#101a1d" stroke="#32655f" stroke-dasharray="5 5"/>
-    <text x="972" y="112" fill="#63d5ca" font-size="11" font-weight="700" letter-spacing="1.4">HUMAN AUTHORITY</text>
-    <text x="972" y="154" fill="#f1f4f7" font-size="22" font-weight="700">Review</text>
-    <text x="972" y="182" fill="#8894a1" font-size="13">inspect diff + receipt</text>
+    <text x="972" y="112" fill="#63d5ca" font-size="11" font-weight="700" letter-spacing="1.4">人类裁决</text>
+    <text x="972" y="154" fill="#f1f4f7" font-size="22" font-weight="700">审阅</text>
+    <text x="972" y="182" fill="#8894a1" font-size="13">检查 diff 与 receipt</text>
     <path d="M972 218H1140" stroke="#2b3a3d"/>
-    <text x="972" y="253" fill="#c4ccd4" font-size="13">Approve command</text>
-    <text x="972" y="281" fill="#c4ccd4" font-size="13">Apply or reject</text>
+    <text x="972" y="253" fill="#c4ccd4" font-size="13">批准命令</text>
+    <text x="972" y="281" fill="#c4ccd4" font-size="13">Apply 或拒绝</text>
     <rect x="972" y="329" width="155" height="48" rx="6" fill="#153b38" stroke="#347d76"/>
-    <text x="1049.5" y="358" text-anchor="middle" fill="#7be2d8" font-size="13" font-weight="700">AUTO APPLY = 0</text>
+    <text x="1049.5" y="358" text-anchor="middle" fill="#7be2d8" font-size="13" font-weight="700">自动写回 = 0</text>
 
     <line x1="244" y1="205" x2="286" y2="205" stroke="#647483" marker-end="url(#arrow)"/>
     <line x1="900" y1="205" x2="942" y2="205" stroke="#647483" marker-end="url(#arrow)"/>
 
-    <text x="40" y="451" fill="#5f6d7a" font-size="12">A successful test is evidence; completion additionally requires finish(verified), a valid receipt, and human review.</text>
+    <text x="40" y="451" fill="#5f6d7a" font-size="12">一次成功的测试只是证据；完成还额外要求 finish(verified)、有效的 receipt 与人工审阅。</text>
   </g>
 </svg>

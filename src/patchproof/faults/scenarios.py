@@ -13,13 +13,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .agent_tools import InvalidToolAction, parse_tool_action
-from .budget import BudgetExceeded, BudgetLedger, BudgetLimits
-from .models import BenchmarkCase
-from .policy import ProcessExecutor, classify_argv
-from .receipt import build_patch_receipt, verify_receipt_file, write_receipt_atomic
-from .storage import SQLiteStore
-from .workspace import SnapshotWorkspace, WorkspaceBoundaryError, WorkspacePreconditionError
+from ..agent.tools import InvalidToolAction, parse_tool_action
+from ..config import PATCHPROOF_ROOT
+from ..evals.models import BenchmarkCase
+from ..infrastructure.sqlite import SQLiteStore
+from ..llm.budget import BudgetExceeded, BudgetLedger, BudgetLimits
+from ..policy.commands import ProcessExecutor, classify_argv
+from ..receipt.sealer import build_patch_receipt, verify_receipt_file, write_receipt_atomic
+from ..workspace.strategies import SnapshotWorkspace, WorkspaceBoundaryError, WorkspacePreconditionError
 
 
 @dataclass(frozen=True)
@@ -168,7 +169,7 @@ class FaultRunner:
     """Run named hooks; manifests describe expectations but do not implement them."""
 
     def __init__(self, project_root: str | Path | None = None):
-        self.project_root = Path(project_root or Path(__file__).resolve().parents[2]).resolve()
+        self.project_root = Path(project_root or PATCHPROOF_ROOT).resolve()
         self._hooks: dict[str, Callable[[], FaultResult]] = {
             scenario.id: getattr(self, f"_run_{scenario.id.replace('-', '_')}") for scenario in FAULT_SCENARIOS
         }

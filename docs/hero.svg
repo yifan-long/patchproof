@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="600" viewBox="0 0 1280 600" role="img" aria-labelledby="title desc">
   <title id="title">PatchProof</title>
-  <desc id="desc">Evidence before Apply: a restrained dark interface showing a verified patch receipt and an auditable event chain.</desc>
+  <desc id="desc">Apply 之前先给证据：一个克制的深色界面，展示已验证的补丁验收单与可审计的事件链。</desc>
   <defs>
     <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#090c11"/>
@@ -24,22 +24,22 @@
   <path d="M0 1H1280" stroke="url(#edge)"/>
   <circle cx="1038" cy="236" r="180" fill="#1aa69a" opacity=".08" filter="url(#softGlow)"/>
 
-  <g font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
-    <text x="76" y="91" fill="#58d5c9" font-size="14" font-weight="700" letter-spacing="3.2">EVIDENCE BEFORE APPLY</text>
+  <g font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif">
+    <text x="76" y="91" fill="#58d5c9" font-size="14" font-weight="700" letter-spacing="3.2">证据优先 · Apply 之前</text>
     <text x="72" y="190" fill="#f4f7fa" font-size="82" font-weight="760" letter-spacing="-3">PatchProof</text>
     <text x="76" y="248" fill="#c4ccd5" font-size="25" font-weight="430">让 AI 编码 Agent 证明它真的改完了</text>
-    <text x="76" y="288" fill="#798695" font-size="18">isolated edits · exact required-check · sealed receipt</text>
+    <text x="76" y="288" fill="#798695" font-size="18">隔离副本 · 原始必查命令 · 密封 Receipt</text>
 
     <g transform="translate(76 350)">
       <path d="M0 0H496" stroke="#293441"/>
-      <text x="0" y="39" fill="#72808f" font-size="12" font-weight="700" letter-spacing="1.4">PUBLIC CASES</text>
+      <text x="0" y="39" fill="#72808f" font-size="12" font-weight="700" letter-spacing="1.4">公开案例</text>
       <text x="0" y="84" fill="#f4f7fa" font-size="36" font-weight="700">3</text>
-      <text x="50" y="82" fill="#9ba7b4" font-size="15">BugsInPy verified</text>
+      <text x="50" y="82" fill="#9ba7b4" font-size="15">BugsInPy 已验证</text>
 
-      <text x="196" y="39" fill="#72808f" font-size="12" font-weight="700" letter-spacing="1.4">COMPLETE PAIRS</text>
+      <text x="196" y="39" fill="#72808f" font-size="12" font-weight="700" letter-spacing="1.4">完整证据对</text>
       <text x="196" y="84" fill="#f4f7fa" font-size="36" font-weight="700">3/3</text>
 
-      <text x="390" y="39" fill="#72808f" font-size="12" font-weight="700" letter-spacing="1.4">AUTO APPLY</text>
+      <text x="390" y="39" fill="#72808f" font-size="12" font-weight="700" letter-spacing="1.4">自动写回</text>
       <text x="390" y="84" fill="#58d5c9" font-size="36" font-weight="700">0</text>
     </g>
 
@@ -49,38 +49,38 @@
       <circle cx="26" cy="29" r="4" fill="#586574"/>
       <circle cx="42" cy="29" r="4" fill="#586574" opacity=".65"/>
       <circle cx="58" cy="29" r="4" fill="#586574" opacity=".35"/>
-      <text x="482" y="34" text-anchor="end" fill="#657281" font-size="12" font-family="ui-monospace, SFMono-Regular, Consolas, monospace">PATCH RECEIPT / 03</text>
+      <text x="482" y="34" text-anchor="end" fill="#657281" font-size="12" font-family="ui-monospace, SFMono-Regular, Consolas, monospace">补丁验收单 / 03</text>
 
-      <text x="30" y="100" fill="#657281" font-size="11" font-weight="700" letter-spacing="1.4">CLAIM</text>
-      <text x="30" y="132" fill="#e5eaf0" font-size="18" font-weight="650">verified after latest edit</text>
+      <text x="30" y="100" fill="#657281" font-size="11" font-weight="700" letter-spacing="1.4">声明</text>
+      <text x="30" y="132" fill="#e5eaf0" font-size="18" font-weight="650">最后一次编辑后已验证</text>
       <rect x="409" y="108" width="79" height="27" rx="13.5" fill="#153d3a" stroke="#2a746d"/>
-      <text x="448.5" y="126" text-anchor="middle" fill="#6ee7dc" font-size="11" font-weight="700">SEALED</text>
+      <text x="448.5" y="126" text-anchor="middle" fill="#6ee7dc" font-size="11" font-weight="700">已密封</text>
 
       <path d="M30 161H490" stroke="#202a34"/>
-      <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="13">
+      <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace, 'Microsoft YaHei'" font-size="13">
         <text x="30" y="200" fill="#687687">01</text>
         <circle cx="75" cy="195" r="5" fill="#58d5c9"/>
-        <text x="97" y="200" fill="#bdc6d0">workspace isolated</text>
+        <text x="97" y="200" fill="#bdc6d0">工作区已隔离</text>
         <text x="456" y="200" fill="#657281">a4c9…</text>
 
         <text x="30" y="247" fill="#687687">02</text>
         <circle cx="75" cy="242" r="5" fill="#58d5c9"/>
-        <text x="97" y="247" fill="#bdc6d0">typed edit recorded</text>
+        <text x="97" y="247" fill="#bdc6d0">类型化编辑已记录</text>
         <text x="456" y="247" fill="#657281">f021…</text>
 
         <text x="30" y="294" fill="#687687">03</text>
         <circle cx="75" cy="289" r="5" fill="#58d5c9"/>
-        <text x="97" y="294" fill="#bdc6d0">required-check · exit 0</text>
+        <text x="97" y="294" fill="#bdc6d0">必查命令 · 退出码 0</text>
         <text x="456" y="294" fill="#657281">7ba3…</text>
       </g>
       <path d="M75 200V237M75 247V284" stroke="#315b59"/>
 
       <rect x="30" y="329" width="460" height="75" rx="6" fill="#111922" stroke="#26333f"/>
-      <text x="50" y="358" fill="#657281" font-size="11" font-weight="700" letter-spacing="1.3">NEXT AUTHORITY</text>
-      <text x="50" y="385" fill="#e5eaf0" font-size="15">human review → Apply or reject</text>
+      <text x="50" y="358" fill="#657281" font-size="11" font-weight="700" letter-spacing="1.3">下一裁决者</text>
+      <text x="50" y="385" fill="#e5eaf0" font-size="15">人工审阅 → Apply 或拒绝</text>
       <path d="M456 357l9 9-9 9" fill="none" stroke="#58d5c9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </g>
 
-    <text x="76" y="556" fill="#53606e" font-size="13">Completion is a verifiable state transition — not a sentence from the model.</text>
+    <text x="76" y="556" fill="#53606e" font-size="13">完成是一个可验证的状态转换，而不是模型的一句话。</text>
   </g>
 </svg>

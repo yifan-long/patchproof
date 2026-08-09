@@ -1,9 +1,22 @@
-"""Command policy and shell-free process execution.
+"""命令策略分类与无 shell 进程执行。
 
-The policy is deliberately conservative. An argv that is not explicitly
-classified as a read-only check is paused for human approval. This is a
-policy gate, not a container: the process executor still runs on the local
-machine and the threat-model documentation says so explicitly.
+做什么
+------
+把一条命令分成三类：只读白名单（免审批直接跑）、需人工审批（可能删/装/联网/动 Git）、
+高危（明确拦住）。批准后在本地用 shell=False 执行，带超时/取消/输出截断。
+
+怎么实现
+--------
+- classify_argv：先过 _safe_readonly_check（pytest/unittest/compileall/git status 等），
+  再查 HIGH_RISK / NETWORK_RISK 正则，剩下的必须进人工审批。
+- ProcessExecutor.run：asyncio.create_subprocess_exec，argv 直传、shell=False。
+
+为什么
+------
+- 这是"检查不可替换"的执行层：任意命令都能跑，但只有白名单内免审批，其余必须人批。
+- 用 argv + shell=False 杜绝 shell 拼接；SHELL_META 正则拦 `; | & > <` 等。
+- 本地执行器不是容器：它仍继承操作系统用户权限。公开/真实评测缺 Docker 时会阻断，
+  不会把本地执行器冒充成沙箱。
 """
 
 from __future__ import annotations
@@ -166,6 +179,8 @@ def classify_argv(argv: list[str] | tuple[str, ...]) -> CommandDecision:
             tuple(spec.args),
             tuple(spec.argv),
         )
+    # 三档分类：白名单直接放行；高风险/联网命令强制审批；其余一律"默认审批"。
+    # 默认保守 —— 没有被明确认定为只读的命令，都要人来拍板。
     if _safe_readonly_check(spec):
         return CommandDecision(
             True,

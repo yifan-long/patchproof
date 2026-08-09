@@ -1,47 +1,44 @@
-# PatchProof v0.3.7 dataset and provenance
+# PatchProof v0.3.7 数据集与溯源（Dataset & Provenance）
 
-The local corpus contains five self-contained, intentionally failing
-PatchProof-owned mini repos under `benchmarks/fixtures/`. They require no
-network. Each manifest entry has exactly one fixed full-file
-`expected_contents` oracle whose path exactly matches `expected_changed_files`:
+本地语料包含 5 个自包含、故意失败、PatchProof 自有的 mini 仓库，位于
+`benchmarks/fixtures/`。它们**不需要网络**。每个 manifest 条目恰好有一个固定的全文件
+`expected_contents` oracle，其路径与 `expected_changed_files` 完全一致：
 
-| case | semantic focus |
+| case | 语义焦点 |
 | --- | --- |
-| `mini-validation` | validation and normalization |
-| `mini-config-precedence` | explicit env/file/default precedence |
-| `mini-pagination` | page boundary behavior |
-| `mini-idempotency` | idempotent state transitions |
-| `mini-serialization` | backward-compatible serialization |
+| `mini-validation` | 校验与归一化 |
+| `mini-config-precedence` | 显式 env/文件/默认值优先级 |
+| `mini-pagination` | 分页边界行为 |
+| `mini-idempotency` | 幂等状态转换 |
+| `mini-serialization` | 向后兼容的序列化 |
 
-Oracle fields are rejected for non-local cases. Deterministic smoke records the
-failing required check, then uses the oracle only for the local baseline and
-FakeLLM infrastructure path. Real/public evaluation receives a case copy with
-oracle fields removed.
+非本地 case 会拒绝 oracle 字段。确定性 smoke 记录失败的 required check，然后只为本地
+baseline 与 FakeLLM 基础设施路径使用 oracle。真实/公开评测收到的是**剥掉 oracle 字段的
+case 副本**。
 
-Public descriptors are in `benchmarks/public/bugs-in-py.v2.json`. They use
-official BugsInPy identifiers and official metadata URLs only:
+## 公开描述符
 
-| project | bug | official identifier |
+公开描述符位于 `benchmarks/public/bugs-in-py.v2.json`。它们只使用官方 BugsInPy 标识符与
+官方元数据 URL：
+
+| 项目 | bug | 官方标识符 |
 | --- | ---: | --- |
 | youtube-dl | 2 | `bugsinpy-checkout -p youtube-dl -v 0 -i 2` |
-| PySnooper | 1 | official BugsInPy project/bug tree |
-| PySnooper | 3 | official BugsInPy project/bug tree |
-| fastapi | 1 | official BugsInPy project/bug tree |
-| black | 1 | official BugsInPy project/bug tree |
-| cookiecutter | 1 | official BugsInPy project/bug tree |
-| httpie | 1 | resolver-gated official project/bug tree |
+| PySnooper | 1 | 官方 BugsInPy 项目/bug 树 |
+| PySnooper | 3 | 官方 BugsInPy 项目/bug 树 |
+| fastapi | 1 | 官方 BugsInPy 项目/bug 树 |
+| black | 1 | 官方 BugsInPy 项目/bug 树 |
+| cookiecutter | 1 | 官方 BugsInPy 项目/bug 树 |
+| httpie | 1 | resolver 门控的官方项目/bug 树 |
 
-All five source descriptors have `provenance_state=unresolved`. They intentionally
-do not claim an upstream commit, source license, or image digest. A resolver
-must obtain and verify those values, verify checkout HEAD, resolve an SPDX
-license and immutable image digest, and record machine-readable evidence before
-public evaluation can proceed. `resolve-public` writes a separate canonical
-`patchproof.public-lock.v1` manifest; it never edits the descriptor. Third-party
-source is cached by dataset URL/revision or source URL/commit under the ignored
-`data/eval-cache/`; it is never vendored.
+全部 5 个源码描述符的 `provenance_state=unresolved`。它们**有意不声明**上游 commit、
+源码许可证或镜像 digest。在公开评测可以继续之前，resolver 必须获取并校验这些值：
+校验 checkout HEAD、解析 SPDX 许可证与不可变镜像 digest、记录机器可读证据。
+`resolve-public` 会写入一个独立的规范化 `patchproof.public-lock.v1` manifest；
+它**永不修改描述符**。第三方源码按数据集 URL/修订版本或源码 URL/commit 缓存到被
+gitignore 的 `data/eval-cache/`；**绝不 vendoring 进仓库**。
 
-Resolution is explicit and does not invoke a model or send public code to an
-LLM:
+解析是显式的，且**不调用模型、不把公开代码发给 LLM**：
 
 ```powershell
 .venv\Scripts\python.exe -m patchproof.benchmark resolve-public `
@@ -51,38 +48,33 @@ LLM:
   --confirm-download
 ```
 
-An already verified official dataset checkout can be replayed without network
-using `--dataset-root` together with its full `--dataset-revision`; source
-caches still undergo detached-HEAD verification. These options do not weaken
-the explicit confirmation, image-runtime, or failing-check requirements.
+一个已验证过的官方数据集 checkout 可以**不联网重放**：使用 `--dataset-root` 连同完整的
+`--dataset-revision`；源码缓存仍会经过 detached-HEAD 校验。这些选项不会削弱显式确认、
+镜像运行时或"失败检查"要求。
 
-The resolver pins the official BugsInPy dataset revision, reads its
-`project.info` and `bug.info`, verifies the exact buggy checkout HEAD, hashes
-metadata and checked-out content, and conservatively identifies license
-evidence. Missing, conflicting, unsafe, or irreproducible evidence produces a
-structured unresolved reason. The lock records the fixed commit only as
-official task identity; it is never exposed as a repair oracle.
+resolver 会钉住官方 BugsInPy 数据集修订版本、读取其 `project.info` 与 `bug.info`、
+校验精确的 buggy checkout HEAD、对元数据与 checkout 内容做哈希、并保守地识别许可证证据。
+缺失、冲突、不安全或不可复现的证据会产出一个结构化的 unresolved 原因。锁清单只把
+固定 commit 记为官方任务身份；**绝不把它暴露为修复 oracle**。
 
-For task semantics, v0.3.7 requires `python_version`, `test_file`, and
-`run_test.sh` from the official bug directory. `run_test.sh` must contain
-exactly one nonempty command line that tokenizes to an approved argv without a
-shell executable, composition, redirection, or environment assignment. The
-resolved goal names only the official project/bug and failing test identity.
-The lock records SHA-256 evidence for `project.info`, `bug.info`, and
-`run_test.sh`; it never derives semantics from `bug_patch.txt`.
+## 任务语义
 
-A public case becomes resolved only when dataset metadata, full buggy and fixed
-commits, checked-out HEAD, license/SPDX evidence, and an evaluator image lock
-are all verifiable. It must also reproduce a nonzero official check in an image
-whose probed Python major/minor matches official metadata. Passing tests,
-missing dependencies, unsafe commands, runtime mismatches, or unavailable
-Docker probes remain unresolved. `expected_contents` and assertions are always
-empty in the public lock.
+对于任务语义，v0.3.7 从官方 bug 目录要求 `python_version`、`test_file` 与 `run_test.sh`。
+`run_test.sh` 必须恰好包含一行非空命令，且 token 化后是一个被批准的 argv，**不含**
+shell 可执行文件、组合、重定向或环境赋值。解析出的 goal 只提及官方项目/bug 与失败测试
+身份。锁清单为 `project.info`、`bug.info` 与 `run_test.sh` 记录 SHA-256 证据；
+它**从不从 `bug_patch.txt` 推导语义**。
 
-`bug_patch.txt` and known patch/fix/oracle variants are excluded without
-reading their contents. They are not copied into probe/evaluation workspaces
-and cannot be read through PatchProof tools.
+一个公开 case 只有在数据集元数据、完整 buggy 与 fixed commits、checkout HEAD、
+许可证/SPDX 证据、evaluator 镜像锁**全部可校验**时才变为 resolved。它还必须在一个
+探测到 Python 主/次版本与官方元数据一致的镜像里复现出**非零官方检查**。通过的测试、
+缺失依赖、不安全命令、运行时不匹配或 Docker 探测不可用都会保持 unresolved。
+`expected_contents` 与断言在公开锁清单中**始终为空**。
 
-The official dataset attribution and metadata source are the BugsInPy GitHub
-repository and README linked in the manifest. Tests use local fake official
-metadata and local Git repositories; preflight never downloads source.
+## 已知答案产物的排除
+
+`bug_patch.txt` 与已知的 patch/fix/oracle 变体**在读取其内容之前就被排除**。
+它们不会被复制进 probe/评测工作区，也无法通过 PatchProof 工具读取。
+
+官方数据集的署名与元数据来源是 manifest 中链接的 BugsInPy GitHub 仓库与 README。
+测试使用本地伪造的官方元数据与本地 Git 仓库；preflight **从不下载源码**。

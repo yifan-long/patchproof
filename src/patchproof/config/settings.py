@@ -1,3 +1,22 @@
+"""运行时配置与路径解析 —— 全项目唯一配置入口。
+
+做什么
+------
+集中管理数据库路径、模型端点/模型名/API key、Docker 限制、评测预算等所有配置，
+并给出全局路径锚点 PATCHPROOF_ROOT（仓库根）与 PROJECT_ROOT（仓库父目录）。
+
+怎么实现
+--------
+用 pydantic-settings 的 BaseSettings，在 model_post_init 里手动拼装优先级链，
+最终实例化全局单例 settings = Settings()。
+
+为什么
+------
+- 优先级固定为：进程环境变量 > 显式构造参数 > env 文件 > 默认值。
+  这样测试里 Settings(**override) 永远压得过 .env，部署时进程级变量也可覆盖。
+- API key 只在进程内存存在（Field repr=False），provider_metadata 只暴露非敏感视图。
+"""
+
 from __future__ import annotations
 
 import os
@@ -9,9 +28,15 @@ from dotenv import dotenv_values
 from pydantic import Field, PrivateAttr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-PATCHPROOF_ROOT = PROJECT_ROOT / "patchproof"
-DEFAULT_ENV_FILE = PROJECT_ROOT / "archive" / "researchflow" / ".env"
+# settings.py sits three directories under the repository root
+# (repo/src/patchproof/config/settings.py). PATCHPROOF_ROOT is that root;
+# PROJECT_ROOT is the enclosing workspace, i.e. the repository's parent.
+PATCHPROOF_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = PATCHPROOF_ROOT.parent
+# Provider configuration belongs to PatchProof.  A missing local .env is a
+# valid configuration; callers may still pass an explicit env file for tests
+# or deployment tooling.
+DEFAULT_ENV_FILE = PATCHPROOF_ROOT / ".env"
 DEFAULT_REPO_PATH = PATCHPROOF_ROOT / "benchmarks" / "fixtures" / "validation"
 DEFAULT_PROFILE_FILE = PATCHPROOF_ROOT / ".patchproof.local.env"
 OPENCODE_ZEN_MODELS = frozenset({"deepseek-v4-flash"})
@@ -22,7 +47,7 @@ class ProviderConfigurationError(ValueError):
 
 
 def resolve_env_file(value: str | os.PathLike[str] | None = None) -> Path:
-    """Resolve the read-only provider source without importing its secrets globally."""
+    """Resolve PatchProof's provider source without importing secrets globally."""
 
     raw = str(value) if value is not None else os.getenv("PATCHPROOF_ENV_FILE", str(DEFAULT_ENV_FILE))
     path = Path(raw).expanduser()
@@ -62,9 +87,6 @@ def read_local_opencode_plan(path: str | os.PathLike[str]) -> str | None:
             raise ProviderConfigurationError("local OpenCode plan is defined more than once")
         selected = value
     return selected
-
-
-current_env_file = resolve_env_file()
 
 
 class Settings(BaseSettings):
@@ -153,8 +175,8 @@ class Settings(BaseSettings):
 
     def model_post_init(self, __context) -> None:
         # Process-level PATCHPROOF_* values have the highest precedence. The
-        # archive/researchflow env file is read as a provider source only; its
-        # key is never copied to disk or included in metadata.
+        # local provider file is read as a source only; its key is never copied
+        # to disk or included in metadata.
         explicit_source = "env_file_path" in self.model_fields_set
         source = resolve_env_file(self.env_file_path if explicit_source else None)
         self.env_file_path = str(source)
@@ -164,15 +186,18 @@ class Settings(BaseSettings):
         process_plan = os.getenv("PATCHPROOF_OPENCODE_PLAN")
         local_plan = read_local_opencode_plan(self.profile_file_path)
         explicit_plan = self.opencode_plan if "opencode_plan" in self.model_fields_set else None
-        archived_plan = provider.get("OPENCODE_PLAN")
+        file_plan = provider.get("OPENCODE_PLAN")
         unprefixed_plan = os.getenv("OPENCODE_PLAN")
-        selected_plan = process_plan or local_plan or explicit_plan or archived_plan or unprefixed_plan or "auto"
+        selected_plan = process_plan or local_plan or explicit_plan or file_plan or unprefixed_plan or "auto"
         normalized_plan = str(selected_plan).strip().lower()
         if normalized_plan not in {"auto", "zen", "go"}:
             raise ProviderConfigurationError("OpenCode plan must be one of: auto, zen, go")
         self.opencode_plan = normalized_plan  # type: ignore[assignment]
 
         def choose(field: str, *names: str, default: object = None) -> object:
+            # 配置优先级链：进程级 PATCHPROOF_* 环境变量 → 显式构造参数 → env 文件
+            # → 未加前缀的环境变量 → 字段默认值。selected_inputs 只用于判断
+            # "来源里有没有 DEEPSEEK_*"，决定 resolved_provider 默认走哪家。
             for prefix in ("PATCHPROOF_",):
                 for name in names:
                     value = os.getenv(prefix + name)

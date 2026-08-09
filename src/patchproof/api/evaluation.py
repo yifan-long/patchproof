@@ -1,23 +1,21 @@
-"""Health, corpus and evaluation routes: preflight, triggered runs and their
-in-memory report index."""
+"""Health, corpus and evaluation routes with durable report queries."""
 
 from __future__ import annotations
 
-import hashlib
-import json
-
 from fastapi import APIRouter, HTTPException, Request
 
-from .api_common import (
+from .. import __version__
+from ..config import settings
+from ..corpus import load_cases
+from ..evals.orchestrator import EvaluationOptions, EvaluationOrchestrator
+from ..evidence.canonical import hash_json
+from .common import (
     _APP_ROOT,
     EvaluationRunRequest,
     _corpus_cases,
     _project_data_path,
     _project_manifest_path,
 )
-from .config import settings
-from .corpus import load_cases
-from .evaluation import EvaluationOptions, EvaluationOrchestrator
 
 router = APIRouter()
 
@@ -26,7 +24,7 @@ router = APIRouter()
 async def health():
     return {
         "status": "ok",
-        "version": "0.3.1",
+        "version": __version__,
         "llm_enabled": settings.llm_enabled,
         "default_repo": str(settings.repo_path_resolved),
         "database": str(settings.database_path_resolved),
@@ -104,8 +102,8 @@ async def trigger_evaluation(request: Request, body: EvaluationRunRequest):
         ),
         jsonl_path=jsonl_path,
     )
-    report_id = hashlib.sha256(json.dumps(report, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
-    request.app.state.evaluation_reports[report_id] = report
+    report_id = hash_json(report)[:16]
+    request.app.state.manager.store.save_evaluation_report(report_id, report)
     return {"report_id": report_id, "report": report}
 
 
@@ -113,18 +111,18 @@ async def trigger_evaluation(request: Request, body: EvaluationRunRequest):
 async def list_reports(request: Request):
     return [
         {
-            "report_id": report_id,
-            "evaluation_kind": report.get("evaluation_kind"),
-            "runs": len(report.get("runs", [])),
-            "aggregate": report.get("aggregate", {}),
+            "report_id": item["report_id"],
+            "evaluation_kind": item["report"].get("evaluation_kind"),
+            "runs": len(item["report"].get("runs", [])),
+            "aggregate": item["report"].get("aggregate", {}),
         }
-        for report_id, report in request.app.state.evaluation_reports.items()
+        for item in request.app.state.manager.store.list_evaluation_reports()
     ]
 
 
 @router.get("/reports/{report_id}")
 async def get_report(request: Request, report_id: str):
-    report = request.app.state.evaluation_reports.get(report_id)
+    report = request.app.state.manager.store.get_evaluation_report(report_id)
     if report is None:
         raise HTTPException(status_code=404, detail="report not found")
     return report

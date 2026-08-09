@@ -90,3 +90,31 @@ def test_evaluation_trigger_requires_both_explicit_confirmations():
         assert response.status_code == 400
         response = client.post("/runs", json={"confirm_real": True, "include_public": True})
         assert response.status_code == 400
+
+
+def test_evaluation_report_survives_api_restart(tmp_path, monkeypatch):
+    from patchproof.config import Settings
+    from patchproof.evidence.canonical import hash_json
+
+    settings = Settings(
+        repo_path=str(tmp_path),
+        database_path=str(tmp_path / "reports.db"),
+        env_file_path=str(tmp_path / "missing.env"),
+        allow_project_target=True,
+    )
+    monkeypatch.setattr(api, "settings", settings)
+    report = {
+        "schema_version": "patchproof.evaluation.v2",
+        "evaluation_kind": "model_quality_comparison",
+        "runs": [],
+        "aggregate": {},
+    }
+    report_id = hash_json(report)[:16]
+
+    with TestClient(api.app) as first_client:
+        first_client.app.state.manager.store.save_evaluation_report(report_id, report)
+        assert first_client.get(f"/reports/{report_id}").json() == report
+
+    with TestClient(api.app) as restarted_client:
+        assert restarted_client.get(f"/reports/{report_id}").json() == report
+        assert restarted_client.get("/reports").json()[0]["report_id"] == report_id

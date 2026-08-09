@@ -1,3 +1,5 @@
+"""LLM provider adapters with explicit transports and shared budget accounting."""
+
 from __future__ import annotations
 
 import json
@@ -15,9 +17,9 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - optional before installation
     AsyncOpenAI = None  # type: ignore[assignment,misc]
 
-from .agent_tools import tool_catalog
+from ..agent.tools import tool_catalog
+from ..config import Settings
 from .budget import BudgetLedger
-from .config import Settings
 
 
 class LLMUnavailableError(RuntimeError):

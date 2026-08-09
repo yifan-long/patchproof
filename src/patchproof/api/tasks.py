@@ -1,23 +1,57 @@
-"""Task management routes: durable create/query, SSE streaming, receipt
-verification, command approval, Apply and cancel."""
+"""任务管理路由 —— 建任务/查询/SSE 流/receipt 校验/命令审批/Apply/取消。
+
+做什么
+------
+把 TaskManager 的能力暴露成 REST + SSE：前端靠这些端点建任务、实时看事件流、
+审 diff、批准命令、最终 Apply。
+
+怎么实现
+--------
+- SSE：按 last-event-id / after 游标增量拉事件，断线重连用游标续传。
+- receipt 校验：同时返回"逻辑哈希"与"文件字节哈希"两项，让 UI 能区分
+  "Receipt 内容被改" 与 "Receipt 文件丢了/被换"。
+- 所有写操作都捕获 KeyError(404) / ValueError(400) 转成 HTTP 错误。
+"""
 
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import json
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
-from .models import ApprovalRequest, TaskCreate, TaskStatus
-from .receipt import verify_receipt
+from ..evidence.canonical import hash_text
+from ..receipt import verify_receipt
+from ..task.models import ApprovalRequest, ReceiptSnapshot, TaskCreate, TaskStatus
 
 router = APIRouter()
 
 
 def _manager(request: Request):
     return request.app.state.manager
+
+
+def _receipt_payload(
+    task_id: str,
+    receipt: ReceiptSnapshot,
+    *,
+    event_chain_verified: bool | None = None,
+) -> dict[str, object]:
+    logical_verified = verify_receipt(receipt.receipt, receipt.receipt_hash)
+    payload = {
+        "task_id": task_id,
+        "receipt_hash": receipt.receipt_hash,
+        "verified": logical_verified and receipt.file_verified,
+        "logical_verified": logical_verified,
+        "artifact_path": receipt.artifact_path,
+        "artifact_file_sha256": receipt.file_sha256,
+        "artifact_file_verified": receipt.file_verified,
+        "receipt": receipt.receipt,
+    }
+    if event_chain_verified is not None:
+        payload["event_chain_verified"] = event_chain_verified
+    return payload
 
 
 @router.get("/tasks")
@@ -67,7 +101,7 @@ async def get_diff(request: Request, task_id: str):
         "task_id": task_id,
         "diff": record.diff,
         "changed_files": record.changed_files,
-        "diff_hash": hashlib.sha256(record.diff.encode("utf-8")).hexdigest(),
+        "diff_hash": hash_text(record.diff),
     }
 
 
@@ -81,16 +115,7 @@ async def get_receipt(request: Request, task_id: str):
     receipt = manager.store.get_receipt(task_id)
     if receipt is None:
         raise HTTPException(status_code=404, detail="任务尚未生成 Patch Receipt")
-    return {
-        "task_id": task_id,
-        "receipt_hash": receipt.receipt_hash,
-        "verified": verify_receipt(receipt.receipt, receipt.receipt_hash) and receipt.file_verified,
-        "logical_verified": verify_receipt(receipt.receipt, receipt.receipt_hash),
-        "artifact_path": receipt.artifact_path,
-        "artifact_file_sha256": receipt.file_sha256,
-        "artifact_file_verified": receipt.file_verified,
-        "receipt": receipt.receipt,
-    }
+    return _receipt_payload(task_id, receipt)
 
 
 @router.get("/tasks/{task_id}/receipt/verify")
@@ -103,16 +128,9 @@ async def verify_task_receipt(request: Request, task_id: str):
     receipt = manager.store.get_receipt(task_id)
     if receipt is None:
         raise HTTPException(status_code=404, detail="任务尚未生成 Patch Receipt")
-    return {
-        "task_id": task_id,
-        "receipt_hash": receipt.receipt_hash,
-        "verified": verify_receipt(receipt.receipt, receipt.receipt_hash) and receipt.file_verified,
-        "logical_verified": verify_receipt(receipt.receipt, receipt.receipt_hash),
-        "artifact_path": receipt.artifact_path,
-        "artifact_file_sha256": receipt.file_sha256,
-        "artifact_file_verified": receipt.file_verified,
-        "event_chain_verified": manager.verify_chain(task_id),
-    }
+    payload = _receipt_payload(task_id, receipt, event_chain_verified=manager.verify_chain(task_id))
+    payload.pop("receipt", None)
+    return payload
 
 
 @router.get("/tasks/{task_id}/events/verify")

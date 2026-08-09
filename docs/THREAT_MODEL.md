@@ -1,62 +1,53 @@
-# PatchProof Threat Model
+# PatchProof 威胁模型
 
-## Assets
+## 资产
 
-- The user's source repository and uncommitted edits.
-- Provider credentials loaded from the existing environment.
-- The claim that a task was tested and is safe to Apply.
-- Receipt and event evidence used during review.
+- 用户的源仓库与未提交的编辑。
+- 从现有环境加载的 provider 凭据。
+- "任务已测试、可以安全 Apply"这一声明。
+- 评审期间使用的 Receipt 与事件证据。
 
-## Trust boundaries
+## 信任边界
 
-1. The model is untrusted input. Its JSON is validated against six typed tools.
-2. The staging workspace is isolated from the source repository.
-3. Docker execution is the required boundary for public/real evaluation. The
-   local process executor is only an explicitly labeled offline smoke path and
-   still has the operating system user's permissions.
-4. SQLite is durable storage, not a write-once ledger. Hash-chain verification
-   detects tampering; it does not prevent a privileged user from editing the DB.
-5. The human is the final authority for risky commands and Apply.
+1. **模型是不受信任的输入**。它的 JSON 输出按六个 typed tool 校验。
+2. **staging 工作区与源仓库隔离**。
+3. **Docker 执行是公开/真实评测的必要边界**。本地进程执行器只是一个显式标注的离线
+   smoke 路径，仍拥有操作系统用户的权限。
+4. **SQLite 是可持久化存储，不是 write-once ledger**。哈希链验证检测篡改；
+   它不能阻止特权用户改库。
+5. **人是风险命令与 Apply 的最终裁决者**。
 
-## Safety invariants
+## 安全不变量
 
-- No `shell=True`; execution uses an argv list and `shell=False`.
-- Docker execution rejects floating images, privileged mode, Docker socket
-  mounts and network access; missing daemon state blocks public/real runs.
-- Shell composition, network access, installation, deletion and Git writes are
-  not auto-approved.
-- A typed edit must provide `expected_sha256` or `old_text`; paths are resolved
-  inside the staging root and sensitive files are blocked.
-- Compact one-shot edits additionally require a nonempty, unique, exact
-  `old_text` match. Optional hashes are checked against current file bytes;
-  writes are atomic and bounded, with no fuzzy matching.
-- BugsInPy patch/fix/oracle artifacts are denied from source context,
-  materialized evaluation copies, typed reads, prompts and reports. Resolver
-  task semantics use only conservatively parsed official metadata and one safe
-  `run_test.sh` command.
-- Public pairs require matching nonzero fail-before evidence from both pinned
-  Docker copies before model construction. Passing, inconsistent, unrunnable,
-  runtime-incompatible or unverified checks are excluded from scoring.
-- `check_command` is normalized once. Only a successful exact-argv required
-  check from the current edit generation can authorize `finish(verified)`;
-  later edits invalidate that evidence.
-- Apply checks the original HEAD/status/manifest against the recorded baseline.
-- Deletions are not silently written back.
-- A process restart marks running tasks `interrupted` and adds an event.
-- A successful test alone is not a completion claim: `finish(verified)` and a
-  Patch Receipt are required before `awaiting_apply`.
-- The canonical receipt artifact is atomically written and its actual file
-  bytes are recorded in SQLite; logical hash or file tampering is detectable.
-- Deterministic mini-repo smoke requires a recorded fail-before state and uses
-  exactly one local fixture edit only for infrastructure validation. Real
-  evaluation receives oracle-stripped cases and uses model-produced edits for both variants, with
-  explicit confirmation, shared hard budgets, immutable provenance and no
-  auto-Apply. Partial pairs are retained but excluded from head-to-head rates.
+- 无 `shell=True`；执行使用 argv 列表与 `shell=False`。
+- Docker 执行拒绝浮动镜像、privileged 模式、Docker socket 挂载与网络访问；
+  缺失 daemon 状态会阻断公开/真实运行。
+- Shell 组合、网络访问、安装、删除与 Git 写入**不会**被自动批准。
+- typed 编辑必须提供 `expected_sha256` 或 `old_text`；路径在 staging root 内解析，
+  敏感文件被阻止。
+- 紧凑 one-shot 编辑额外要求非空、唯一、精确的 `old_text` 匹配。可选哈希对当前文件字节
+  校验；写入是原子且有界的，**没有模糊匹配**。
+- BugsInPy 的 patch/fix/oracle 产物被拒绝进入源码上下文、物化的评测副本、typed 读取、
+  prompt 与报告。Resolver 的任务语义只使用保守解析的官方元数据与一条安全的
+  `run_test.sh` 命令。
+- 公开对要求来自**两个 pin 的 Docker 副本**的匹配非零 fail-before 证据，之后才构造模型。
+  通过、不一致、不可运行、运行时不相容或未校验的检查被排除在评分之外。
+- `check_command` 只归一化一次。只有**来自当前编辑代际**的成功精确-argv required check
+  才能授权 `finish(verified)`；之后的编辑使该证据失效。
+- Apply 对照记录的 baseline 检查原始 HEAD/状态/manifest。
+- 删除不会静默写回。
+- 进程重启把运行中的任务标记为 `interrupted` 并追加一条事件。
+- 单独的成功测试**不是**完成声明：在进入 `awaiting_apply` 之前，要求 `finish(verified)`
+  与 Patch Receipt。
+- 规范化 Receipt artifact 原子写入，其真实文件字节记录在 SQLite 中；逻辑哈希或文件篡改
+  都可检测。
+- 确定性 mini 仓库 smoke 要求记录 fail-before 状态，并且只使用恰好一个本地 fixture 编辑
+  来做基础设施验证。真实评测收到剥掉 oracle 的 case，两个变体都使用模型产生的编辑，
+  并要求显式确认、共享硬预算、不可变 provenance，且不自动 Apply。部分对会保留，
+  但被排除在 head-to-head 比率之外。
 
-## Explicit limitation
+## 明确限制
 
-The local process executor is not Docker, a VM, or a kernel-level sandbox. A
-human should only approve commands they understand, and production deployment
-credentials should not be available in the PatchProof process environment.
-Docker daemon/image readiness and public provenance are external preflight
-requirements; this workspace does not claim them when unavailable.
+本地进程执行器不是 Docker、VM 或内核级沙箱。人只应批准自己理解的命令，且生产部署凭据
+不应出现在 PatchProof 进程环境中。Docker daemon/镜像就绪与公开 provenance 是外部
+preflight 要求；缺失时本工作区**不声称**具备它们。

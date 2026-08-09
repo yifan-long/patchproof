@@ -1,6 +1,6 @@
-"""Compatibility exports for the Docker evaluation layer."""
+"""Docker evaluation isolation and evaluator image building."""
 
-from .docker_executor import (
+from .executor import (
     DockerCommandRunner,
     DockerEvalExecutor,
     DockerExecutionLayer,
@@ -20,8 +20,8 @@ __all__ = [
     "DockerExecutionResult",
     "DockerExecutor",
     "DockerLimits",
-    "DockerProcessAdapter",
     "DockerPreflight",
+    "DockerProcessAdapter",
     "DockerUnavailableError",
     "SubprocessDockerRunner",
 ]

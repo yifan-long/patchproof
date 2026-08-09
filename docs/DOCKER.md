@@ -1,32 +1,27 @@
-# Docker evaluation isolation
+# Docker 评测隔离
 
-`DockerEvalExecutor` is an injectable execution layer. Tests assert its exact
-argv with a fake runner; production execution is separate from build/setup
-networking and cannot silently fall back to the local process executor.
+`DockerEvalExecutor` 是一个可注入的执行层。测试用 fake runner 断言它的精确 argv；
+生产执行与构建/安装网络**相互分离**，且**不能静默回退**到本地进程执行器。
 
-Execution containers use:
+执行容器使用：
 
-- a digest-pinned image;
-- `--read-only` rootfs and one isolated writable `/workspace` bind mount;
-- `--network none`, deterministic `TZ`, locale and `PYTHONHASHSEED`;
-- CPU, memory, PID, timeout, cancellation and output limits;
-- `no-new-privileges`, `--cap-drop ALL`, no privileged mode and no Docker socket.
+- digest 固定的镜像；
+- `--read-only` rootfs + 一个隔离的可写 `/workspace` bind 挂载；
+- `--network none`、确定性 `TZ`、locale 与 `PYTHONHASHSEED`；
+- CPU、内存、PID、超时、取消与输出限制；
+- `no-new-privileges`、`--cap-drop ALL`、无 privileged 模式、无 Docker socket。
 
-Build/setup commands use a separately configured explicit network mode. They
-produce setup evidence and do not change the execution command's `none`
-network. The daemon is never reconfigured automatically.
+构建/安装命令使用**单独配置的显式网络模式**。它们产出安装证据，并且不会改变执行命令的
+`none` 网络。daemon **从不被自动重配置**。
 
-Preflight reports CLI availability, daemon/version, image pin and availability,
-cache state, explicit registry/ACR host, package-mirror host, and execution mode without secrets. A
-`local://patchproof-python312` marker means `local_smoke_only`; it is not a
-Docker isolation claim.
+Preflight 报告 CLI 可用性、daemon/版本、镜像 pin 与可用性、缓存状态、显式
+registry/ACR 主机、包镜像主机，以及**不含密钥**的执行模式。`local://patchproof-python312`
+标记意味着 `local_smoke_only`；**它不是 Docker 隔离声明**。
 
-Domestic mirror strategy is configuration-only: an explicit registry/ACR image
-mapping may be supplied for pinned images, while TUNA mirrors are limited to
-apt/pip/package setup commands. PatchProof never mutates Docker daemon config.
+国内镜像策略是**纯配置**的：可以为 pin 的镜像提供显式 registry/ACR 映射，而 TUNA 镜像
+仅限于 apt/pip/package 安装命令。PatchProof **从不修改 Docker daemon 配置**。
 
-The controlled evaluator image is built only by an explicit command with a
-digest-pinned base image:
+受控的 evaluator 镜像只由显式命令构建，使用 digest 固定的基础镜像：
 
 ```powershell
 .venv\Scripts\python.exe -m patchproof.benchmark build-evaluator-image `
@@ -35,24 +30,19 @@ digest-pinned base image:
   --confirm-build
 ```
 
-The builder uses `--pull=false`, never requests privileged mode or mounts the
-Docker socket, and inspects the resulting image. Its checksummed lock records
-the immutable local `sha256:` image ID, repository digests, Dockerfile and
-dependency-lock hashes, and safe build policy. A direct Docker image ID is an
-explicit immutable reference accepted by the evaluator.
+构建器使用 `--pull=false`，**从不请求 privileged 模式或挂载 Docker socket**，并 inspect
+生成的镜像。它的带校验和锁清单记录不可变的本地 `sha256:` 镜像 ID、仓库 digests、
+Dockerfile 与依赖锁的哈希，以及安全的构建策略。直接使用 Docker 镜像 ID 是 evaluator
+接受的显式不可变引用。
 
-The build also probes `platform.python_version()` inside the completed image
-with a read-only root filesystem and `--network none`; the verified runtime is
-written to the image lock. Public resolution compares its major/minor version
-with BugsInPy metadata before running the official check. A mismatch is
-`runtime_version_mismatch`, not a resolved executable case. PatchProof never
-falls back to the host interpreter or silently pulls an old floating image.
+构建还会在完成的镜像内部以只读 rootfs 与 `--network none` 探测
+`platform.python_version()`；验证过的运行时写入镜像锁。公开解析在运行官方检查前把它的
+主/次版本与 BugsInPy 元数据比较。不匹配就是 `runtime_version_mismatch`，**不是**已解析
+可执行 case。PatchProof **永不回退**到宿主机解释器，也**不会静默拉取**旧的浮动镜像。
 
-`--acr-registry` changes only the local image name. TUNA is accepted only as a
-package mirror, for example
-`--pip-index-url https://pypi.tuna.tsinghua.edu.cn/simple`; neither option logs
-into a registry or alters daemon configuration.
+`--acr-registry` 只改变本地镜像名。TUNA 仅被接受为包镜像，例如
+`--pip-index-url https://pypi.tuna.tsinghua.edu.cn/simple`；两个选项都不会登录 registry，
+也不会修改 daemon 配置。
 
-When the daemon is unavailable, public and real evaluation is reported as
-blocked. The offline mini-repo smoke and fault hooks remain runnable as local
-smoke with the label above.
+当 daemon 不可用时，公开与真实评测报告为 **blocked**。离线 mini 仓库 smoke 与故障注入
+hook 仍可作为本地 smoke 运行，并带有上面的 `local://patchproof-python312` 标记。

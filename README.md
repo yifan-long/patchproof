@@ -178,11 +178,15 @@ Vue Evidence Console ── FastAPI / SSE ── TaskManager ── durable stat
 
 | 文档 | 内容 |
 |---|---|
-| [Architecture](docs/ARCHITECTURE.md) | 状态机、模块边界、receipt 与事件链 |
-| [Threat Model](docs/THREAT_MODEL.md) | 信任边界、安全不变量、明确限制 |
-| [Evaluation](docs/EVALUATION.md) | 公开案例准备、运行与复现 |
-| [Benchmark](docs/BENCHMARK.md) | smoke / real 模式与报告结构 |
-| [Dataset](docs/DATASET.md) | 语料 provenance 与解析策略 |
-| [Docker](docs/DOCKER.md) | evaluator 镜像与隔离要求 |
-| [Windows local demo](docs/LOCAL_DEMO.md) | DPAPI 配置、本地启动、日志与停止 |
-| [Deployment](docs/DEPLOYMENT.md) | 自托管、运维和部署边界 |
+| [架构文档](docs/ARCHITECTURE.md) | 分层总览、状态机、模块边界、receipt 与事件链 |
+| [代码阅读指南](docs/CODE_GUIDE.md) | 按流程逐模块精读代码：做什么 / 怎么实现 / 为什么 |
+| [调用链速查](docs/CALL_MAP.md) | 每个关键函数的"谁调我 / 我调谁" |
+| [调试指南](docs/DEBUG_GUIDE.md) | VSCode 断点调试路径，让程序自己演示流程 |
+| [威胁模型](docs/THREAT_MODEL.md) | 信任边界、安全不变量、明确限制 |
+| [评测指南](docs/EVALUATION.md) | 公开案例准备、运行与复现 |
+| [评测基准](docs/BENCHMARK.md) | smoke / real 模式与报告结构 |
+| [数据集与溯源](docs/DATASET.md) | 语料 provenance 与解析策略 |
+| [Docker 隔离](docs/DOCKER.md) | evaluator 镜像与隔离要求 |
+| [本地演示](docs/LOCAL_DEMO.md) | DPAPI 配置、本地启动、日志与停止 |
+| [部署文档](docs/DEPLOYMENT.md) | 自托管、运维和部署边界 |
+| [宣传文案](docs/PROMO.md) | 一句话讲清 PatchProof 解决什么问题 |

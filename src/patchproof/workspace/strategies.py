@@ -1,9 +1,27 @@
-"""Isolated workspaces and guarded write-back strategies."""
+"""隔离工作区与受控写回 —— 保证模型永远碰不到真实仓库，写回前必先复核。
+
+做什么
+------
+把真实仓库"隔离"成一份可安全折腾的副本，只暴露受控的 read/apply/diff 接口；
+Apply 时再安全地把改动的文件写回真实仓库。
+
+怎么实现
+--------
+- 两种策略：干净 Git 仓库 → ``GitWorktreeWorkspace``（detached worktree，连 .git 历史都摸不到）；
+  脏/非 Git 仓库 → ``SnapshotWorkspace``（shutil 复制副本，剔除 .venv/node_modules 等）。
+- 边界：``_relative`` 拒绝绝对路径与 ``..``；``_is_protected`` 拒绝 .env/锁文件/隐藏文件。
+- 写回：``_atomic_writeback`` 逐个文件临时写 + ``os.replace`` + fsync，失败用备份回滚。
+
+为什么
+------
+- 路径边界在解析层就锁死：模型传任何 ../ 或绝对路径都会被拒，无法逃逸到工作区之外。
+- apply_edit 的前置 hash/old_text 校验 + 原子写回，使"编辑"既可审计又可回滚，
+  这是"系统可以安全地把模型放进本地目录"的底气。
+"""
 
 from __future__ import annotations
 
 import difflib
-import hashlib
 import json
 import os
 import shutil
@@ -12,6 +30,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Protocol
 
+from ..evidence.canonical import hash_bytes
 from .artifact_policy import is_denied_artifact
 
 COPY_IGNORE = shutil.ignore_patterns(
@@ -103,7 +122,9 @@ class WorkspaceBoundaryError(ValueError):
 
 
 def sha256_bytes(content: bytes) -> str:
-    return hashlib.sha256(content).hexdigest()
+    """Historical workspace name backed by the shared evidence hash."""
+
+    return hash_bytes(content)
 
 
 def sha256_text(content: str) -> str:
@@ -111,6 +132,10 @@ def sha256_text(content: str) -> str:
 
 
 def _relative(root: Path, relative_path: str) -> Path:
+    """把模型传的相对路径解析为工作区内路径；任何越界都直接拒绝。
+
+    边界三关：绝对路径、含 .. 的路径、解析后不在 root 下的路径。
+    """
     candidate = Path(relative_path.replace("\\", "/"))
     if candidate.is_absolute() or any(part == ".." for part in candidate.parts):
         raise WorkspaceBoundaryError("编辑路径必须是工作区内的相对路径")
@@ -123,6 +148,8 @@ def _relative(root: Path, relative_path: str) -> Path:
 
 
 def _is_protected(relative: Path) -> bool:
+    # 三类不可碰：benchmark 答案/oracle 产物、锁文件（依赖锁定）、隐藏路径
+    #（保留 .github/.well-known 这类正常的点目录）。
     return is_denied_artifact(relative) or relative.name.lower() in PROTECTED_FILES or any(
         part.startswith(".") and part not in {".github", ".well-known"} for part in relative.parts
     )
@@ -250,11 +277,13 @@ class _WorkspaceTextMixin:
                 raise WorkspacePreconditionError("old_text 不能为空")
             current_text = current.decode("utf-8", errors="strict")
             crlf = "\r\n" in current_text
-            # Line-ending-agnostic matching: a Windows checkout may store CRLF
-            # while the model emits LF from read_file observations.
+            # 行尾无关匹配：Windows 检出的是 CRLF、模型从 read_file 观察到的是 LF，
+            # 不归一化会把"明明存在的旧片段"误报为不存在，导致误拒。
             normalized_current = current_text.replace("\r\n", "\n").replace("\r", "\n")
             normalized_old = old_text.replace("\r\n", "\n").replace("\r", "\n")
             matches = normalized_current.count(normalized_old)
+            # 旧片段必须存在且唯一：0 次=拒绝盲写，多次=拒绝模糊替换。
+            # 二选一都能防止模型在不确定位置的情况下乱改。
             if matches == 0:
                 raise WorkspacePreconditionError(f"{relative.as_posix()} 前置文本不存在，拒绝盲写")
             if matches != 1:
@@ -324,6 +353,11 @@ class _WorkspaceTextMixin:
         return records
 
     def _atomic_writeback(self, changed: list[str]) -> None:
+        """把 staging 里改动的文件写回真实仓库，逐文件原子替换。
+
+        每个文件先写临时文件再 ``os.replace`` 并 fsync，避免"写一半崩溃"污染真实仓库；
+        backups 记录写回前的字节，任何一个文件失败就把已写的全部回滚，保持仓库原子性。
+        """
         if any(not (self.staging / relative).exists() for relative in changed):
             missing = next(relative for relative in changed if not (self.staging / relative).exists())
             raise RuntimeError(f"删除文件的变更不支持自动应用，请人工处理: {missing}")

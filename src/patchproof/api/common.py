@@ -8,9 +8,10 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .corpus import load_cases
+from ..config import PATCHPROOF_ROOT
+from ..corpus import load_cases
 
-_APP_ROOT = Path(__file__).resolve().parents[2]
+_APP_ROOT = PATCHPROOF_ROOT
 
 
 def _project_path(value: str) -> Path:

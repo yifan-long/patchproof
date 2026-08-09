@@ -7,7 +7,6 @@ caller supplies an explicit confirmation flag.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import subprocess
 from collections.abc import Sequence
@@ -15,7 +14,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
-from .models import BenchmarkCase
+from ..evals.models import BenchmarkCase
+from ..evidence.canonical import canonical_json, hash_text
 
 
 class CommandRunner(Protocol):
@@ -100,11 +100,11 @@ class FetchPlan:
 
 
 def canonical_case_payload(case: BenchmarkCase) -> str:
-    return json.dumps(case.model_dump(mode="json"), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return canonical_json(case.model_dump(mode="json"))
 
 
 def content_addressed_cache_key(case: BenchmarkCase) -> str:
-    return hashlib.sha256(canonical_case_payload(case).encode("utf-8")).hexdigest()
+    return hash_text(canonical_case_payload(case))
 
 
 def load_cases(path: str | Path, *, allow_unresolved: bool = True) -> list[BenchmarkCase]:
@@ -162,7 +162,7 @@ def build_fetch_plan(
         )
     if not case.repo_url or not case.immutable_revision:
         raise ValueError(f"case {case.id} is missing a resolved repository URL/revision")
-    source_key = hashlib.sha256(f"{case.repo_url}@{case.immutable_revision.lower()}".encode()).hexdigest()
+    source_key = hash_text(f"{case.repo_url}@{case.immutable_revision.lower()}")
     resolved_source = cache_root / "sources" / source_key
     if resolved_source.is_dir():
         return FetchPlan(

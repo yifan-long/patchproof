@@ -1,0 +1,50 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug API server (uvicorn)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["patchproof.api:app", "--app-dir", "src", "--port", "8010"],
+      "cwd": "${workspaceFolder}",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug pytest (选中用例)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["tests/test_runner.py::test_xxx", "-s"],
+      "cwd": "${workspaceFolder}",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug benchmark smoke (全闭环, 免模型)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "patchproof.benchmark",
+      "args": [
+        "smoke",
+        "--manifest", "benchmarks/manifest.v2.json",
+        "--project-root", ".",
+        "--output", "data/benchmark-smoke.json"
+      ],
+      "cwd": "${workspaceFolder}",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug faults (故障注入)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "patchproof.faults",
+      "args": ["run"],
+      "cwd": "${workspaceFolder}",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "console": "integratedTerminal"
+    }
+  ]
+}
